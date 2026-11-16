@@ -27,14 +27,13 @@ Chrome extension; `app/scripts/lib/` is that extension's code, with edits only t
 
 | Setting | Value |
 |---|---|
-| Freshsales domain | `yourcompany.myfreshworks.com` or your custom domain (with or without `https://`) |
 | Freshsales API key | Profile picture > Settings > API settings. The export sees what this user can see. |
 
 ## To confirm on the first live run
 
 - Confirmed on a live Freshworks CRM account (2026-11-16, through `fdk run`): field edit
   history, the activity timeline, tracked fields and the record lookup all accept the API
-  key. Workflow action history and classic `freshsales.io` accounts are not yet confirmed.
+  key. Workflow action history is confirmed too. Classic `freshsales.io` accounts are not yet confirmed.
 - Confirmed: on a record, the app reads the record from
   `client.data.get("currentEntityInfo")`.
 - Everything in the [list view exporter's list](../fs-list-view-exporter/README.md#to-confirm-on-the-first-live-run).

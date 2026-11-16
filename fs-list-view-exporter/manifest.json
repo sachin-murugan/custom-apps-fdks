@@ -9,7 +9,8 @@
         }
       },
       "requests": {
-        "crmGet": {}
+        "crmGet": {},
+        "classicGet": {}
       }
     },
     "contact": {},

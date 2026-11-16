@@ -10,7 +10,9 @@
       },
       "requests": {
         "crmGet": {},
-        "crmPost": {}
+        "classicGet": {},
+        "crmPost": {},
+        "classicPost": {}
       }
     },
     "contact": {

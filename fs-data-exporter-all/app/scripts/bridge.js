@@ -44,11 +44,11 @@
   }
 
   /**
-   * A fetch() stand-in for CRMClient. The request template takes the host and path from the
-   * context and adds the Authorization header itself. The host is passed cleaned up because a
-   * template can't tidy the saved setting, and the platform rejects a host with "https://".
+   * A fetch() stand-in for CRMClient. Only the path and query of the URL are used. The request
+   * template fills in the account's own host (current_host.endpoint_urls) and the Authorization
+   * header. `templates` names the template for each HTTP method.
    */
-  function makeFetch(fw, { minGapMs = MIN_GAP_MS, sleepImpl = sleep, now = Date.now } = {}) {
+  function makeFetch(fw, { templates, minGapMs = MIN_GAP_MS, sleepImpl = sleep, now = Date.now } = {}) {
     let queue = Promise.resolve();
     let last = 0;
     const turn = () => {
@@ -70,14 +70,14 @@
     return async function fsxFetch(url, init) {
       const u = new URL(url);
       const path = u.pathname + u.search;
-      const options = { context: { host: u.host, path } };
+      const options = { context: { path } };
       const method = String((init && init.method) || 'GET').toUpperCase();
       if (init && init.body !== undefined) options.body = init.body;
       if (cache.has(path) && cacheable(method, path)) return toResponse(cache.get(path));
       await turn();
       let res;
       try {
-        res = await fw.request.invokeTemplate(method === 'POST' ? 'crmPost' : 'crmGet', options);
+        res = await fw.request.invokeTemplate(templates[method], options);
       } catch (err) {
         // HTTP errors from the CRM arrive as rejections that carry a status.
         if (!err || typeof err.status !== 'number') {
@@ -135,14 +135,34 @@
       }),
   };
 
-  /** Wait for the platform client and read the account domain from the installation settings. */
-  async function connect() {
-    const fw = await root.app.initialized();
-    const iparams = await fw.iparams.get();
-    const host = normalizeHost(iparams.crmDomain);
-    if (!host) throw new Error('No Freshsales domain is set. Open the app settings and enter it.');
-    return { fw, host, fetchImpl: makeFetch(fw, typeof FSX.minGapMs === 'number' ? { minGapMs: FSX.minGapMs } : {}) };
+  // Request templates per product. A template can only name one product's URL, and an account
+  // has either Freshworks CRM (Freshsales Suite) or classic Freshsales.
+  const TEMPLATES = {
+    freshworks_crm: { GET: 'crmGet', POST: 'crmPost' },
+    freshsales: { GET: 'classicGet', POST: 'classicPost' },
+  };
+
+  /** Which product this account is, and its host, from the platform's currentHost data. */
+  function pickProduct(endpointUrls) {
+    const urls = endpointUrls || {};
+    const names = Object.keys(TEMPLATES).filter((p) => urls[p]);
+    if (!names.length) return null;
+    // Local testing lists both products with the same URL; go by the domain then.
+    const classic = names.find((p) => p === 'freshsales' && /(^|\.)freshsales\.io$/.test(normalizeHost(urls[p])));
+    const product = classic || names[0];
+    return { product, host: normalizeHost(urls[product]) };
   }
 
-  FSX.bridge = { MIN_GAP_MS, normalizeHost, toResponse, makeFetch, makeClient, store, connect };
+  /** Wait for the platform client and find the Freshsales account the app is installed on. */
+  async function connect() {
+    const fw = await root.app.initialized();
+    const data = await fw.data.get('currentHost');
+    const found = pickProduct(data && data.currentHost && data.currentHost.endpoint_urls);
+    if (!found) throw new Error("This account doesn't have Freshsales, so there is nothing to export.");
+    const options = { templates: TEMPLATES[found.product] };
+    if (typeof FSX.minGapMs === 'number') options.minGapMs = FSX.minGapMs;
+    return { fw, host: found.host, fetchImpl: makeFetch(fw, options) };
+  }
+
+  FSX.bridge = { MIN_GAP_MS, normalizeHost, toResponse, makeFetch, makeClient, pickProduct, store, connect };
 })(globalThis);

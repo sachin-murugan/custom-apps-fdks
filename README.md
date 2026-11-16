@@ -16,9 +16,10 @@ The extensions run inside your logged-in Freshsales tab and use your session coo
 marketplace app runs in an iframe on Freshworks' app domain, so it has no access to that
 session. Instead:
 
-- **Sign-in**: at install time each app asks for the Freshsales domain and an API key
+- **Sign-in**: at install time each app asks for a Freshsales API key
   (`config/iparams.json`). The key is stored by the platform as a secure parameter and is
-  never sent to the browser.
+  never sent to the browser. The account's address comes from the platform
+  (`current_host.endpoint_urls`), so there is no domain to type.
 - **Requests**: every call goes through the platform's Request Method
   (`config/requests.json`, `app/scripts/bridge.js`). The exporter code in
   `app/scripts/lib/` is the extension's code (edited only to pass the CLI's lint rules); `bridge.js` gives it a `fetch`
@@ -45,7 +46,7 @@ fdk pack -s                   # skip the coverage gate; writes dist/<folder>.zip
 
 Then in the [Freshworks developer portal](https://developers.freshworks.com/) create a
 **Custom app**, upload the zip and publish it to your account. In Freshsales open
-**Admin settings > Marketplace apps**, install it, and enter your domain and API key
+**Admin settings > Marketplace apps**, install it, and enter your API key
 (profile picture > **Settings > API settings**).
 
 Full-page apps can't be previewed with `fdk run`; Freshworks requires publishing them as a

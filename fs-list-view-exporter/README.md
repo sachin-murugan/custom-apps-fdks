@@ -20,15 +20,14 @@ Chrome extension; `app/scripts/lib/` is that extension's code, with edits only t
 
 | Setting | Value |
 |---|---|
-| Freshsales domain | `yourcompany.myfreshworks.com`, `yourcompany.freshsales.io` or your custom domain (with or without `https://`) |
 | Freshsales API key | Profile picture > Settings > API settings. The export sees what this user can see. |
 
 ## Files
 
 ```
 manifest.json            platform 3.0; full_page_app; contact, deal, sales_account modules
-config/iparams.json      installation settings (domain, API key)
-config/requests.json     the crmGet request template
+config/iparams.json      installation setting (API key)
+config/requests.json     request templates (Freshworks CRM and classic Freshsales)
 app/index.html           the page
 app/scripts/app.js       export flow
 app/scripts/views.js     list view picker

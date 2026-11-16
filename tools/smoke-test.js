@@ -42,10 +42,10 @@ function stubClient() {
     throw { status: 404, response: 'not found' };
   }
   const fw = {
-    iparams: { get: async () => ({ crmDomain: 'https://Acme.myfreshworks.com/' }) },
     data: {
       // window.__entity is set by the test when the app is opened on a record.
-      get: async () => {
+      get: async (key) => {
+        if (key === 'currentHost') return { currentHost: { endpoint_urls: { freshworks_crm: 'https://acme.myfreshworks.com' } } };
         if (!window.__entity) throw new Error('no entity here');
         return { currentEntityInfo: window.__entity };
       },
@@ -53,8 +53,7 @@ function stubClient() {
     request: {
       invokeTemplate: async (name, opts) => {
         calls.push({ name, path: opts.context.path, at: Date.now() });
-        // The saved domain has a protocol and a slash; the template must get a bare host.
-        if (opts.context.host !== 'acme.myfreshworks.com') throw { status: 400, response: `bad host ${opts.context.host}` };
+        if (!['crmGet', 'crmPost'].includes(name)) throw { status: 404, response: `unexpected template ${name}` };
         return answer(name === 'crmPost' ? 'POST' : 'GET', opts.context.path, opts.body);
       },
     },

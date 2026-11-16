@@ -2,7 +2,19 @@
   "crmGet": {
     "schema": {
       "method": "GET",
-      "host": "<%= context.host %>",
+      "host": "<%= current_host.endpoint_urls.freshworks_crm %>",
+      "path": "<%= context.path %>",
+      "headers": {
+        "Authorization": "Token token=<%= iparam.crmApiKey %>",
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      }
+    }
+  },
+  "classicGet": {
+    "schema": {
+      "method": "GET",
+      "host": "<%= current_host.endpoint_urls.freshsales %>",
       "path": "<%= context.path %>",
       "headers": {
         "Authorization": "Token token=<%= iparam.crmApiKey %>",
