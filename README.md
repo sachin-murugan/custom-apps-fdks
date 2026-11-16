@@ -32,13 +32,15 @@ session. Instead:
 
 ## Install as a custom app
 
-You need Node.js 24.11+ and the Freshworks CLI (`fdk`) 10+.
-See <https://developers.freshworks.com/docs/app-sdk/v3.0/common/app-development-process/>.
+You need the Freshworks CLI (`fdk`), see
+<https://developers.freshworks.com/docs/app-sdk/v3.0/common/app-development-process/>.
+The manifests are set to the versions the apps were validated with: FDK 9.8.2 on Node.js
+18.20.8. With FDK 10 (Node.js 24.11+), let `fdk validate` update `engines` when it asks.
 
 ```bash
 cd fs-list-view-exporter      # or another app folder
 fdk validate
-fdk pack --skip-coverage      # writes dist/<folder>.zip
+fdk pack -s                   # skip the coverage gate; writes dist/<folder>.zip
 ```
 
 Then in the [Freshworks developer portal](https://developers.freshworks.com/) create a

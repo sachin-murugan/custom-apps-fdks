@@ -4,3 +4,4 @@ log/
 .fdk/
 coverage/
 .DS_Store
+.report.json
