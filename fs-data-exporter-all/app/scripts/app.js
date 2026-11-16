@@ -11,7 +11,7 @@
   const { initialSelection, applySelection, rememberSelection, prefsKey } = FSX.columns;
   const { pickColumns } = FSX.columnPicker;
   const { store, connect, makeClient } = FSX.bridge;
-  const { $, renderState, downloadCsv, fillSelect, today, errorText } = FSX.ui;
+  const { $, number, renderState, showSetup, notice, downloadCsv, fillSelect, showPause, today, errorText } = FSX.ui;
 
   // Exports that need nothing but the account. The rest belong to one page (a list, a segment…)
   // and are offered when that page's address is pasted.
@@ -124,6 +124,11 @@
     return meta ? meta.count : 0;
   }
 
+  // The progress screen keeps the last count and position while a later message (a pause, a
+  // retry) only changes the text.
+  let shown = {};
+  const paint = (patch) => renderState((shown = { ...shown, ...patch }));
+
   /** job: { key, label, id?, view? } */
   async function runExport(job) {
     if (running || !job) return;
@@ -131,41 +136,37 @@
     running = { aborted: false };
     const signal = running;
     const key = ckptKey(job);
-    let fetchedSoFar = 0;
+    const view = def.view ? job.view : null;
+    const name = view && !view.listId ? view.viewName || `${view.endpoint}-view-${view.viewId}` : job.label;
+    shown = {};
     try {
       const onRetry = ({ reason, waitMs }) =>
-        renderState({
-          status: 'running',
-          message:
-            reason === 'rate_limit'
-              ? `Rate limit hit, waiting ${Math.ceil(waitMs / 1000)}s before continuing (${fetchedSoFar} fetched)…`
-              : `Connection problem, retrying in ${Math.ceil(waitMs / 1000)}s (${fetchedSoFar} fetched)…`,
-        });
+        paint({ message: `${reason === 'rate_limit' ? 'Rate limit hit' : 'Connection problem'}, trying again in ${Math.ceil(waitMs / 1000)} s…` });
       const fetcher = makeFetcher(onRetry);
       const saved = await loadCheckpoint(key);
       const resume = saved ? { startPage: saved.nextPage, initial: saved.records } : {};
-      renderState({ status: 'running', message: saved ? `Resuming: ${saved.records.length} records already saved…` : 'Loading lookups…' });
-      const onProgress = (p) => {
-        fetchedSoFar = ![null, undefined].includes(p.fetched) ? p.fetched : fetchedSoFar;
-        renderState(
+      paint({
+        status: 'running',
+        title: `Exporting ${name}`,
+        count: saved ? `${number(saved.records.length)} records` : 'Starting…',
+        message: saved ? 'Picking up where the last run stopped…' : 'Loading lookups…',
+      });
+      const onProgress = (p) =>
+        paint(
           p.phase === 'detail'
-            ? { status: 'running', message: `Loading full details: ${p.enriched} of ${p.total} records`, page: p.enriched, totalPages: p.total }
+            ? { message: `Loading full details: ${number(p.enriched)} of ${number(p.total)} records`, count: `${number(p.total)} records`, page: p.enriched, totalPages: p.total }
             : {
-                status: 'running',
-                message: `Fetched ${p.fetched} records (page ${p.page}${p.totalPages ? ` of ${p.totalPages}` : ''})`,
+                message: `Page ${number(p.page)}${p.totalPages ? ` of ${number(p.totalPages)}` : ''} fetched`,
+                count: `${number(p.fetched)} records`,
                 page: p.page,
                 totalPages: p.totalPages,
               }
         );
-      };
       const onPageRecords = pageSaver(key);
 
       let records;
       let columnsKey;
-      let name = job.label;
-      if (def.view) {
-        const view = job.view;
-        if (!view.listId) name = view.viewName || `${view.endpoint}-view-${view.viewId}`;
+      if (view) {
         columnsKey = view.entity;
         records = await fetcher.fetchViewRecords(view, view.viewId, {
           log,
@@ -177,39 +178,40 @@
         });
       } else {
         columnsKey = `page:${job.key}`;
-        await fetcher.registry.loadSelectors(fetcher.client, log);
+        await fetcher.registry.loadSelectors(fetcher.client, log, FSX.lookups.selectorsFor(null));
         records = await fetchAction(fetcher.client, job.key, job.id, { signal, onPage: onProgress, onPageRecords, ...resume });
       }
 
       if (!records.length) {
         await clearCheckpoint(key);
-        return renderState({ status: 'done', message: 'Nothing to export here.' });
+        return paint({ status: 'done', count: 'No records', message: 'There is nothing to export here.' });
       }
-      renderState({ status: 'running', message: `Building CSV for ${records.length} records…` });
+      paint({ message: `Building the CSV for ${number(records.length)} records…` });
       const rows = flattenRecords(records, fetcher.registry);
       const columns = await chooseColumns(columnsKey, unionFieldnames(rows), records.length, name);
       if (!columns) {
-        return renderState({ status: 'done', message: 'Export cancelled. Fetched records are kept, so exporting again is quick.' });
+        return paint({ status: 'done', title: 'Export cancelled', message: 'No file was saved. The fetched records are kept, so exporting again is quick.' });
       }
       downloadCsv(toCsv(rows, columns), `${sanitizeFilename(name)} ${today()}.csv`);
       await clearCheckpoint(key);
-      renderState({ status: 'done', message: `Exported ${records.length} records, ${columns.length} columns.` });
+      paint({ status: 'done', title: `Exported ${name}`, count: `${number(records.length)} records`, message: `${number(columns.length)} columns saved to your downloads.` });
     } catch (err) {
       const message = errorText(err);
       log(message);
       const kept = await savedCount(key);
-      renderState({ status: 'error', message: friendlyError(message, def) + (kept ? ` ${kept} records are saved; export again to resume.` : '') });
+      const resumeNote = kept ? ` ${number(kept)} records are saved; export again to pick up from there.` : '';
+      if (/Export cancelled/.test(message)) paint({ status: 'done', title: 'Export cancelled', message: `No file was saved.${resumeNote}` });
+      else paint({ status: 'error', title: "Export didn't finish", message: friendlyError(message, def) + resumeNote });
     } finally {
       running = null;
     }
   }
 
   function friendlyError(message, def) {
-    if (/Export cancelled/.test(message)) return 'Export cancelled.';
     if (/HTTP 429/.test(message)) return 'The export kept hitting the rate limit. Wait a minute and try again.';
     if (/feature_not_available/.test(message)) return `${def.label} isn't available on this Freshsales plan.`;
     if (/HTTP 401|HTTP 403/.test(message)) {
-      return 'Freshsales refused the request. Check the domain and API key in the app settings, and that this user is allowed to see this.';
+      return 'Freshsales refused the request. Check the API key in the app settings, and that this user is allowed to see this.';
     }
     if (/All paths failed/.test(message)) return `${def.label} couldn't be reached with the API key on this account. Details are in the browser console.`;
     return message;
@@ -260,14 +262,15 @@
     try {
       conn = await connect();
     } catch (err) {
-      $('account').textContent = '';
-      return renderState({ status: 'error', message: errorText(err) });
+      $('account').textContent = 'Not connected';
+      return notice(errorText(err));
     }
     $('account').textContent = `Connected to ${conn.host}`;
+    conn.throttle.onWait = (ms) => running && showPause(ms);
     picker = FSX.views.setupViewPicker({
       host: conn.host,
       fetcher: makeFetcher(),
-      onChange: (selection) => ($('export-view').disabled = !selection || !!running),
+      onChange: (selection) => ($('export-view').disabled = !selection),
     });
     renderActions();
     $('action').addEventListener('change', () => ($('export-action').disabled = !$('action').value));
@@ -279,7 +282,9 @@
     $('export-action').addEventListener('click', () => runExport(selectedJob()));
     $('cancel').addEventListener('click', () => {
       if (running) running.aborted = true;
+      paint({ message: 'Cancelling…' });
     });
+    $('back').addEventListener('click', showSetup);
   }
 
   start();

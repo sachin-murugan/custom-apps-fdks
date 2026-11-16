@@ -138,9 +138,9 @@
       if (lookupType) this.lookupFields[fld.name] = normalizeBucket(String(lookupType));
     }
 
-    async loadSelectors(client, log = () => undefined) {
+    async loadSelectors(client, log = () => undefined, resources = SELECTOR_RESOURCES) {
       await Promise.all(
-        SELECTOR_RESOURCES.map(async (resource) => {
+        resources.map(async (resource) => {
           try {
             const { data } = await client.getFirst(client.selectorPaths(resource));
             const items = itemsFromResponse(data, resource);
@@ -181,7 +181,21 @@
     }
   }
 
+  // Each lookup list is one request. A module's export only needs its own lists; the rest of
+  // the names come with the records (include=...).
+  const COMMON_SELECTORS = ['territories', 'campaigns', 'lead_sources'];
+  const MODULE_SELECTORS = {
+    contact: ['lifecycle_stages', 'contact_statuses', 'lost_reasons'],
+    deal: ['deal_pipelines', 'deal_stages', 'deal_types', 'deal_reasons', 'deal_products', 'deal_payment_statuses'],
+    sales_account: ['industry_types', 'business_types'],
+    lead: ['lead_stages', 'lead_reasons'],
+  };
+  function selectorsFor(entity) {
+    return MODULE_SELECTORS[entity] ? [...COMMON_SELECTORS, ...MODULE_SELECTORS[entity]] : COMMON_SELECTORS;
+  }
+
   FSX.lookups = {
+    selectorsFor,
     SELECTOR_RESOURCES,
     ID_FIELD_TO_BUCKET,
     NESTED_ASSOCIATIONS,

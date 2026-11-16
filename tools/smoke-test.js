@@ -86,8 +86,8 @@ async function open(browser, app, { entity, paced } = {}) {
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  // Skip the 1.3 s request spacing unless the test is about it.
-  if (!paced) await page.addInitScript(() => (window.FSX = { minGapMs: 5 }));
+  // A tiny request budget when the test is about pacing, a huge one otherwise.
+  await page.addInitScript((p) => (window.FSX = { testLimits: p ? { max: 5, windowMs: 3000 } : { max: 100000 } }), Boolean(paced));
   if (entity) await page.addInitScript((e) => (window.__entity = e), entity);
   await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
   await page.waitForFunction(() => document.getElementById('account').textContent.startsWith('Connected'));
@@ -113,12 +113,17 @@ async function csvOf(page, click) {
     assert.match(csv.name, /^My Contacts \d{4}-\d\d-\d\d\.csv$/);
     assert.strictEqual(csv.lines.length, 151);
     assert.ok(csv.lines[0].startsWith('id,'));
-    // Requests are spaced to stay under the platform's 50 a minute.
-    const gaps = await t.page.evaluate(() => window.__calls.slice(1).map((c, i) => c.at - window.__calls[i].at));
-    assert.ok(Math.min(...gaps) >= 1250, `requests too close together: ${Math.min(...gaps)} ms`);
+    // The limiter never lets more than 5 requests start within any 3 s here.
+    const times = await t.page.evaluate(() => window.__calls.map((c) => c.at));
+    assert.ok(times.length > 10, 'expected the export to need several request windows');
+    times.forEach((at, i) => assert.ok(i < 5 || at - times[i - 5] >= 2950, `request ${i} broke the limit`));
+    assert.match(await t.page.textContent('#run-count'), /^150 records$/);
+    assert.strictEqual(await t.page.isVisible('#setup'), false);
+    await t.page.click('#back');
+    assert.strictEqual(await t.page.isVisible('#setup'), true);
     assert.deepStrictEqual(t.errors, []);
     await t.close();
-    console.log('ok  fs-list-view-exporter: 150 records, 2 pages, paced');
+    console.log('ok  fs-list-view-exporter: 150 records, 2 pages, paced, progress screen');
 
     // 2. Data exporter: pasted list view address with the column picker, then an account export.
     t = await open(browser, 'fs-data-exporter-all');
@@ -129,6 +134,7 @@ async function csvOf(page, click) {
       await t.page.locator('[data-fsx-column-picker] #ok').click({ timeout: 120000 });
     });
     assert.strictEqual(csv.lines.length, 151);
+    await t.page.click('#back');
     await t.page.selectOption('#action', 'lists');
     csv = await csvOf(t.page, async () => {
       await t.page.click('#export-action');
@@ -150,6 +156,7 @@ async function csvOf(page, click) {
       'Record ID,Record name,Field,Field key,Old value,New value,Changed by,Source,Changed at',
       '5,C 5,Email,email,a,c5@x.test,Sam,,2026-01-02T03:04:05Z',
     ]);
+    await t.page.click('#back');
     csv = await csvOf(t.page, () => t.page.click('#export-timeline'));
     assert.strictEqual(csv.lines.length, 2);
     assert.deepStrictEqual(t.errors, []);

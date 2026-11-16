@@ -14,22 +14,24 @@
       <div id="account" class="muted">Connecting…</div>
     </header>
 
+    <div id="setup">
+      <p id="notice" class="notice" role="alert" hidden></p>
     <section id="picker">
       <h2>What to export</h2>
       <div class="field">
         <label class="label" for="url">Paste the address of a list view, a record or a workflow</label>
-        <input type="url" id="url" placeholder="https://yourcompany.myfreshworks.com/crm/sales/contacts/view/123" data-busy-disable />
+        <input type="url" id="url" placeholder="https://yourcompany.myfreshworks.com/crm/sales/contacts/view/123" />
         <div id="url-hint" class="muted small"></div>
       </div>
-      <div class="field muted small">or pick a Contacts, Accounts or Deals list view</div>
+      <div class="or">or pick a Contacts, Accounts or Deals list view</div>
       <div class="row">
         <div class="field">
           <label class="label" for="module">Module</label>
-          <select id="module" data-busy-disable></select>
+          <select id="module"></select>
         </div>
         <div class="field">
           <label class="label" for="view">Saved view</label>
-          <select id="view" data-busy-disable disabled></select>
+          <select id="view" disabled></select>
         </div>
       </div>
       <div class="field" id="custom-field" hidden><input type="text" id="custom" /></div>
@@ -40,14 +42,14 @@
     <form id="form" hidden>
       <section>
         <span class="label" id="target-label">Selected</span>
-        <strong id="target-name"></strong>
+        <div id="target-name" class="target"></div>
       </section>
 
       <section>
         <span class="label">Changed between (leave blank for all history)</span>
         <div class="row">
-          <label>From <input type="datetime-local" id="from" step="1" data-busy-disable /></label>
-          <label>To <input type="datetime-local" id="to" step="1" data-busy-disable /></label>
+          <label>From <input type="datetime-local" id="from" step="1" /></label>
+          <label>To <input type="datetime-local" id="to" step="1" /></label>
         </div>
       </section>
 
@@ -58,19 +60,28 @@
         <div id="fields"></div>
       </section>
 
-      <button type="submit" id="export" class="primary" data-busy-disable>Export field edit history</button>
-      <button type="button" id="export-timeline" hidden data-busy-disable>Export activity timeline</button>
-      <button type="button" id="export-workflow" class="primary" hidden data-busy-disable>Export workflow action history</button>
-      <p id="pace" class="muted small">Field history takes one request per record, and the app platform allows about 45 a minute.</p>
+      <button type="submit" id="export" class="primary">Export field edit history</button>
+      <button type="button" id="export-timeline" hidden>Export activity timeline</button>
+      <button type="button" id="export-workflow" class="primary" hidden>Export workflow action history</button>
+      <p id="pace" class="muted small">Field history takes one request per record. Large views pause from time to time to stay within the app platform's limit of 50 requests a minute; the progress screen shows the time left.</p>
     </form>
 
-    <button id="cancel" hidden>Cancel</button>
-    <div id="progress" hidden>
-      <div class="bar"><div id="bar-fill"></div></div>
-      <div id="progress-text" class="muted"></div>
     </div>
-    <a id="download" hidden></a>
-    <p id="error" class="error" hidden></p>
+
+    <div id="run" hidden>
+      <section>
+        <div id="run-title">Exporting…</div>
+        <div class="run-stats"><span id="run-count"></span><span id="run-percent"></span></div>
+        <div class="bar" id="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-labelledby="run-title"><div id="bar-fill"></div></div>
+        <div id="progress-text" class="muted" aria-live="polite"></div>
+        <div id="run-time" class="muted small"></div>
+        <div id="run-pause" class="pause small" hidden></div>
+        <p id="error" class="error" hidden></p>
+        <a id="download" class="button primary" hidden></a>
+        <button id="cancel" hidden>Cancel export</button>
+        <button id="back" hidden>Export something else</button>
+      </section>
+    </div>
   </main>
 
   <script src="scripts/lib/platform.js"></script>

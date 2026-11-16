@@ -127,12 +127,15 @@
         startPage = 1,
         initial = [],
         onPageRecords = () => Promise.resolve(),
+        lookups = true, // false when only record ids and names are needed
       } = {}
     ) {
       this.registry = new LookupRegistry();
       log(`Platform: ${this.client.platformLabel}`);
-      await this.registry.loadSelectors(this.client, log);
-      await this.registry.loadFieldDefinitions(this.client, mod.entity, mod.endpoint, mod.custom);
+      if (lookups) {
+        await this.registry.loadSelectors(this.client, log, FSX.lookups.selectorsFor(mod.entity));
+        await this.registry.loadFieldDefinitions(this.client, mod.entity, mod.endpoint, mod.custom);
+      }
 
       let paths = this.viewPaths(mod, viewId);
       const all = [...initial];

@@ -7,7 +7,7 @@
   const { initialSelection, applySelection, rememberSelection, prefsKey } = FSX.columns;
   const { pickColumns } = FSX.columnPicker;
   const { store, connect, makeClient } = FSX.bridge;
-  const { $, renderState, downloadCsv, today, errorText } = FSX.ui;
+  const { $, number, renderState, showSetup, notice, downloadCsv, showPause, today, errorText } = FSX.ui;
 
   let running = null; // { aborted } while an export is in flight
   let picker = null;
@@ -33,13 +33,18 @@
     return applySelection(columns, chosen);
   }
 
+  // The progress screen keeps the last count and position while a later message (a pause, a
+  // retry) only changes the text.
+  let shown = {};
+  const paint = (patch) => renderState((shown = { ...shown, ...patch }));
+
   function progressState(p) {
     if (p.phase === 'detail') {
-      return { status: 'running', message: `Loading full details: ${p.enriched} of ${p.total} records`, page: p.enriched, totalPages: p.total };
+      return { message: `Loading full details: ${number(p.enriched)} of ${number(p.total)} records`, count: `${number(p.total)} records`, page: p.enriched, totalPages: p.total };
     }
     return {
-      status: 'running',
-      message: `Fetched ${p.fetched} records (page ${p.page}${p.totalPages ? ` of ${p.totalPages}` : ''})`,
+      message: `Page ${number(p.page)}${p.totalPages ? ` of ${number(p.totalPages)}` : ''} fetched`,
+      count: `${number(p.fetched)} records`,
       page: p.page,
       totalPages: p.totalPages,
     };
@@ -50,37 +55,38 @@
     if (running || !view) return;
     running = { aborted: false };
     const signal = running;
+    view.viewName = view.viewName || `${view.endpoint}-view-${view.viewId}`;
+    shown = {};
     try {
-      renderState({ status: 'running', message: 'Loading lookups…' });
+      paint({ status: 'running', title: `Exporting ${view.viewName}`, count: 'Starting…', message: 'Loading lookups…' });
       const fetcher = new ExportFetcher(makeClient(conn));
-      view.viewName = view.viewName || `${view.endpoint}-view-${view.viewId}`;
       const records = await fetcher.fetchViewRecords(view, view.viewId, {
         log,
         signal,
         enrichDetails: $('enrich').checked,
-        onProgress: (p) => renderState(progressState(p)),
+        onProgress: (p) => paint(progressState(p)),
       });
-      if (!records.length) return renderState({ status: 'done', message: 'This view has no records.' });
+      if (!records.length) return paint({ status: 'done', count: 'No records', message: 'This view has no records.' });
 
-      renderState({ status: 'running', message: `Building CSV for ${records.length} records…` });
+      paint({ message: `Building the CSV for ${number(records.length)} records…` });
       const rows = flattenRecords(records, fetcher.registry);
       const columns = await chooseColumns(view, unionFieldnames(rows), records.length);
-      if (!columns) return renderState({ status: 'done', message: 'Export cancelled.' });
+      if (!columns) return paint({ status: 'done', title: 'Export cancelled', message: 'No file was saved.' });
       downloadCsv(toCsv(rows, columns), `${sanitizeFilename(view.viewName)} ${today()}.csv`);
-      renderState({ status: 'done', message: `Exported ${records.length} records, ${columns.length} columns.` });
+      paint({ status: 'done', title: `Exported ${view.viewName}`, count: `${number(records.length)} records`, message: `${number(columns.length)} columns saved to your downloads.` });
     } catch (err) {
       log(errorText(err));
-      renderState({ status: 'error', message: friendlyError(errorText(err)) });
+      const cancelled = /Export cancelled/.test(errorText(err));
+      paint(cancelled ? { status: 'done', title: 'Export cancelled', message: 'No file was saved.' } : { status: 'error', title: "Export didn't finish", message: friendlyError(errorText(err)) });
     } finally {
       running = null;
     }
   }
 
   function friendlyError(message) {
-    if (/Export cancelled/.test(message)) return 'Export cancelled.';
     if (/HTTP 429/.test(message)) return 'The export kept hitting the rate limit. Wait a minute and try again.';
     if (/HTTP 401|HTTP 403/.test(message)) {
-      return 'Freshsales refused the request. Check the domain and API key in the app settings, and that this user can see the view.';
+      return 'Freshsales refused the request. Check the API key in the app settings, and that this user can see the view.';
     }
     if (/All paths failed/.test(message)) return 'Could not reach the list view API for this account. Details are in the browser console.';
     return message;
@@ -90,20 +96,22 @@
     try {
       conn = await connect();
     } catch (err) {
-      $('account').textContent = '';
-      return renderState({ status: 'error', message: errorText(err) });
+      $('account').textContent = 'Not connected';
+      return notice(errorText(err));
     }
     $('account').textContent = `Connected to ${conn.host}`;
-    const fetcher = new ExportFetcher(makeClient(conn));
+    conn.throttle.onWait = (ms) => running && showPause(ms);
     picker = FSX.views.setupViewPicker({
       host: conn.host,
-      fetcher,
-      onChange: (selection) => ($('export').disabled = !selection || !!running),
+      fetcher: new ExportFetcher(makeClient(conn)),
+      onChange: (selection) => ($('export').disabled = !selection),
     });
     $('export').addEventListener('click', runExport);
     $('cancel').addEventListener('click', () => {
       if (running) running.aborted = true;
+      paint({ message: 'Cancelling…' });
     });
+    $('back').addEventListener('click', showSetup);
   }
 
   start();

@@ -9,7 +9,7 @@
   const { ExportFetcher, mapWithConcurrency } = FSX.fetcher;
   const { toCsv, sanitizeFilename } = FSX.csv;
   const { store, connect } = FSX.bridge;
-  const { $, show, renderState, downloadCsv, today, errorText } = FSX.ui;
+  const { $, show, number, renderState, showSetup, notice, hideNotice, downloadCsv, showPause, today, errorText } = FSX.ui;
   const H = FSX.history;
   const A = FSX.activity;
 
@@ -94,7 +94,7 @@
     const seq = ++detectSeq;
     target = next;
     show($('form'), false);
-    show($('error'), false);
+    hideNotice();
     show($('hint'), true);
     if (!next) {
       $('hint').textContent = 'Choose what to export.';
@@ -123,8 +123,7 @@
     show($('pace'), next.kind === 'view' && fields.length > 0);
     if (fields.length) renderFields();
     else if (!isWorkflow) {
-      $('error').textContent = `No fields are tracked for ${info.module}. An admin can turn on field tracking in the module's field settings.`;
-      show($('error'), true);
+      notice(`No fields are tracked for ${info.module}. An admin can turn on field tracking in the module's field settings.`);
     }
   }
 
@@ -143,11 +142,16 @@
   const boxes = () => [...$('fields').querySelectorAll('input[type=checkbox]')];
   const visibleBoxes = () => boxes().filter((b) => !b.parentElement.hidden);
 
+  // The progress screen keeps the last count and position while a later message (a pause, a
+  // retry) only changes the text.
+  let shown = {};
+  const paint = (patch) => renderState((shown = { ...shown, ...patch }));
+
   // Timeline and workflow history: one paged fetch, then a CSV (no checkpoint; these are small).
   async function runSimple(t, opts, signal, onRetry) {
     const client = makeClient(onRetry);
     const onPage = (n, rows) => {
-      if (!signal.aborted) renderState({ status: 'running', message: `Fetched ${rows} entries (page ${n})…` });
+      if (!signal.aborted) paint({ count: `${number(rows)} entries`, message: `Page ${number(n)} fetched` });
     };
     const range = { fromMs: opts.fromMs, toMs: opts.toMs, signal, onPage };
     let rows, columns;
@@ -160,7 +164,7 @@
     }
     const kind = opts.action === 'timeline' ? 'activity timeline' : 'action history';
     downloadCsv(toCsv(rows, columns), `${sanitizeFilename(`${t.name} ${kind}`)} ${today()}.csv`);
-    renderState({ status: 'done', message: `Exported ${rows.length} ${opts.action === 'timeline' ? 'timeline entries' : 'workflow actions'}.` });
+    paint({ status: 'done', title: `Exported ${t.name}`, count: `${number(rows.length)} ${opts.action === 'timeline' ? 'timeline entries' : 'workflow actions'}`, message: 'Saved to your downloads.' });
   }
 
   async function runExport(opts) {
@@ -171,13 +175,11 @@
     const key = opts.action === 'history' ? ckptKey(t, opts) : null;
     let meta = null;
     try {
-      let status = '';
       const onRetry = ({ reason, waitMs }) =>
-        renderState({
-          status: 'running',
-          message: `${reason === 'rate_limit' ? 'Rate limit hit' : 'Connection problem'}, retrying in ${Math.ceil(waitMs / 1000)}s. ${status}`,
-        });
-      renderState({ status: 'running', message: 'Starting…' });
+        paint({ message: `${reason === 'rate_limit' ? 'Rate limit hit' : 'Connection problem'}, trying again in ${Math.ceil(waitMs / 1000)} s…` });
+      const what = { history: 'field edit history', timeline: 'activity timeline', workflow: 'action history' }[opts.action];
+      shown = {};
+      paint({ status: 'running', title: `Exporting ${what} of ${t.name}`, count: 'Starting…', message: 'Getting ready…' });
       if (opts.action !== 'history') return await runSimple(t, opts, signal, onRetry);
 
       const client = makeClient(onRetry);
@@ -203,15 +205,14 @@
 
       // 1. Every record id in the view (paged, checkpointed per page).
       if (!meta.idsDone) {
-        status = `Collecting records: ${meta.records.length} so far`;
-        renderState({ status: 'running', message: meta.records.length ? `Resuming: ${status}` : 'Collecting records in this view…' });
+        paint({ count: `${number(meta.records.length)} records`, message: meta.records.length ? 'Picking up where the last run stopped…' : 'Step 1 of 2: collecting the records in this view…' });
         await fetcher.fetchViewRecords(t, t.viewId, {
           log,
           signal,
           startPage: meta.nextPage,
+          lookups: false,
           onProgress: (p) => {
-            status = `Collecting records: ${p.fetched} so far`;
-            renderState({ status: 'running', message: status, page: p.page, totalPages: p.totalPages });
+            paint({ count: `${number(meta.records.length)} records`, message: `Step 1 of 2: collecting records (page ${number(p.page)}${p.totalPages ? ` of ${number(p.totalPages)}` : ''})`, page: 0, totalPages: 0 });
           },
           onPageRecords: async (page, records) => {
             meta.records.push(...records.filter((r) => r && ![null, undefined].includes(r.id)).map((r) => ({ id: r.id, name: H.recordName(r) })));
@@ -238,8 +239,7 @@
           if (signal.aborted) throw new Error('Export cancelled'); // don't report after a cancel
           finished += 1;
           found += changes.length;
-          status = `History: ${finished} of ${total} records, ${allRows.length + found} changes`;
-          renderState({ status: 'running', message: status, page: finished, totalPages: total });
+          paint({ count: `${number(allRows.length + found)} changes`, message: `${total > 1 ? 'Step 2 of 2: ' : ''}history read for ${number(finished)} of ${number(total)} records`, page: finished, totalPages: total });
           return H.toRows(rec, changes, labels);
         });
         const rows = results.flat();
@@ -250,10 +250,10 @@
       }
 
       if (!total) {
-        renderState({ status: 'done', message: 'This view has no records.' });
+        paint({ status: 'done', count: 'No records', message: 'This view has no records.' });
       } else {
         downloadCsv(toCsv(allRows, H.COLUMNS), `${sanitizeFilename(t.name)} field edit history ${today()}.csv`);
-        renderState({ status: 'done', message: `Exported ${allRows.length} changes from ${total} records.` });
+        paint({ status: 'done', title: `Exported field edit history of ${t.name}`, count: `${number(allRows.length)} changes`, message: `From ${number(total)} record${total === 1 ? '' : 's'}. Saved to your downloads.` });
       }
       await clearCkpt(key);
     } catch (err) {
@@ -261,20 +261,18 @@
       log(message);
       const saved = key && (await loadCkpt(key));
       const kept = saved ? (saved.idsDone ? `${saved.done} of ${saved.records.length} records done` : `${saved.records.length} records collected`) : '';
-      renderState({
-        status: 'error',
-        message: `${friendlyError(message)}${kept ? ` Progress is saved (${kept}); export again with the same settings to resume.` : ''}`,
-      });
+      const resumeNote = kept ? ` Progress is saved (${kept}); export again with the same settings to pick up from there.` : '';
+      if (/Export cancelled/.test(message)) paint({ status: 'done', title: 'Export cancelled', message: `No file was saved.${resumeNote}` });
+      else paint({ status: 'error', title: "Export didn't finish", message: friendlyError(message) + resumeNote });
     } finally {
       running = null;
     }
   }
 
   function friendlyError(message) {
-    if (/Export cancelled/.test(message)) return 'Export cancelled.';
     if (/HTTP 429/.test(message)) return 'The export kept hitting the rate limit. Wait a minute and try again.';
     if (/HTTP 401|HTTP 403/.test(message)) {
-      return 'Freshsales refused the request. Check the domain and API key in the app settings, and that this user is allowed to see these records.';
+      return 'Freshsales refused the request. Check the API key in the app settings, and that this user is allowed to see these records.';
     }
     if (/field_history_unavailable/.test(message)) return "This Freshsales account doesn't return field edit history. The feature may not be on its plan.";
     if (/HTTP 400/.test(message)) return `Freshsales rejected the request: ${message}`;
@@ -289,7 +287,7 @@
     const fromMs = toMs($('from').value);
     const to = toMs($('to').value);
     if (![null, undefined].includes(fromMs) && ![null, undefined].includes(to) && fromMs > to) {
-      renderState({ status: 'error', message: '"From" is after "To".' });
+      notice('"From" is after "To".');
       return null;
     }
     return { fromMs, toMs: to };
@@ -311,7 +309,7 @@
     $('form').addEventListener('submit', (e) => {
       e.preventDefault();
       const chosen = boxes().filter((b) => b.checked).map((b) => b.value);
-      if (!chosen.length) return renderState({ status: 'error', message: 'Pick at least one field.' });
+      if (!chosen.length) return notice('Pick at least one field.');
       const r = range();
       if (r) runExport({ action: 'history', fields: chosen, labels: fields.filter((f) => chosen.includes(f.name)), ...r });
     });
@@ -325,7 +323,9 @@
     });
     $('cancel').addEventListener('click', () => {
       if (running) running.aborted = true;
+      paint({ message: 'Cancelling…' });
     });
+    $('back').addEventListener('click', showSetup);
   }
 
   /** The record this app was opened on (entity menu placements), or null on the full page. */
@@ -344,10 +344,11 @@
     try {
       conn = await connect();
     } catch (err) {
-      $('account').textContent = '';
-      return renderState({ status: 'error', message: errorText(err) });
+      $('account').textContent = 'Not connected';
+      return notice(errorText(err));
     }
     $('account').textContent = `Connected to ${conn.host}`;
+    conn.throttle.onWait = (ms) => running && showPause(ms);
     wireForm();
 
     const record = await recordFromPage(conn.fw);

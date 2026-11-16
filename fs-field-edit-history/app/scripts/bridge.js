@@ -5,10 +5,37 @@
 (function (root) {
   const FSX = (root.FSX = root.FSX || {});
 
-  // The platform allows 50 Request Method calls a minute per installation. Calls are spaced
-  // so a long export stays under that instead of running into 429s.
-  const MIN_GAP_MS = 1300;
+  // The platform allows 50 Request Method calls a minute per installation. The limiter lets a
+  // small export run at full speed and makes a long one pause when the minute's budget is used,
+  // instead of running into 429s. A little headroom is left for other open copies of the app.
+  const MAX_PER_WINDOW = 45;
+  const WINDOW_MS = 60000;
+  const CACHE_TTL_MS = 60 * 60 * 1000;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  /**
+   * Returns turn(): resolves when the next request may go. At most `max` requests start in any
+   * `windowMs`. `hooks.onWait(ms)` is called before each pause so the page can say why it waits.
+   */
+  function makeLimiter({ max = MAX_PER_WINDOW, windowMs = WINDOW_MS, sleepImpl = sleep, now = Date.now, hooks = {} } = {}) {
+    const sent = [];
+    let queue = Promise.resolve();
+    const next = async () => {
+      for (;;) {
+        const t = now();
+        while (sent.length && t - sent[0] >= windowMs) sent.shift();
+        if (sent.length < max) break;
+        const wait = sent[0] + windowMs - t + 50;
+        if (hooks.onWait) hooks.onWait(wait);
+        await sleepImpl(wait);
+      }
+      sent.push(now());
+    };
+    return () => {
+      queue = queue.then(next);
+      return queue;
+    };
+  }
 
   /** "https://Acme.myfreshworks.com/crm/sales/" -> "acme.myfreshworks.com" */
   function normalizeHost(value) {
@@ -48,23 +75,10 @@
    * template fills in the account's own host (current_host.endpoint_urls) and the Authorization
    * header. `templates` names the template for each HTTP method.
    */
-  function makeFetch(fw, { templates, minGapMs = MIN_GAP_MS, sleepImpl = sleep, now = Date.now } = {}) {
-    let queue = Promise.resolve();
-    let last = 0;
-    const turn = () => {
-      const mine = queue.then(async () => {
-        const wait = last + minGapMs - now();
-        if (wait > 0) await sleepImpl(wait);
-        last = now();
-      });
-      queue = mine;
-      return mine;
-    };
-
-    // Lookup lists and field settings don't change during a session, and several of them
-    // don't exist on every plan. Remember their answers (including "not found") so a second
-    // export doesn't spend the request budget on them again.
-    const cache = new Map();
+  function makeFetch(fw, { templates, turn = makeLimiter(), cache = new Map(), onCached = () => undefined } = {}) {
+    // Lookup lists and field settings rarely change, and several of them don't exist on every
+    // plan. Their answers (including "not found") are remembered, so later exports don't spend
+    // the request budget on them again.
     const cacheable = (method, path) => method === 'GET' && /\/(selector|settings)\//.test(path);
 
     return async function fsxFetch(url, init) {
@@ -86,7 +100,10 @@
         res = err;
       }
       const settled = res.status < 500 && res.status !== 429 && res.status !== 401 && res.status !== 403;
-      if (settled && cacheable(method, path)) cache.set(path, res);
+      if (settled && cacheable(method, path)) {
+        cache.set(path, { status: res.status, headers: res.headers, response: res.response });
+        onCached(cache);
+      }
       return toResponse(res);
     };
   }
@@ -159,10 +176,25 @@
     const data = await fw.data.get('currentHost');
     const found = pickProduct(data && data.currentHost && data.currentHost.endpoint_urls);
     if (!found) throw new Error("This account doesn't have Freshsales, so there is nothing to export.");
-    const options = { templates: TEMPLATES[found.product] };
-    if (typeof FSX.minGapMs === 'number') options.minGapMs = FSX.minGapMs;
-    return { fw, host: found.host, fetchImpl: makeFetch(fw, options) };
+    const throttle = {}; // the page sets throttle.onWait to show rate-limit pauses
+    const limits = FSX.testLimits || {};
+    const turn = makeLimiter({ ...limits, hooks: throttle });
+
+    // Lookup answers are kept for an hour across visits.
+    const cacheKey = `cache:${found.host}`;
+    let cache = new Map();
+    try {
+      const { [cacheKey]: saved } = await store.get(cacheKey);
+      if (saved && Date.now() - saved.at < CACHE_TTL_MS) cache = new Map(saved.entries);
+    } catch (_e) {
+      cache = new Map();
+    }
+    const startedAt = Date.now();
+    const onCached = (c) => store.set({ [cacheKey]: { at: startedAt, entries: [...c] } }).catch(() => undefined);
+
+    const fetchImpl = makeFetch(fw, { templates: TEMPLATES[found.product], turn, cache, onCached });
+    return { fw, host: found.host, fetchImpl, throttle };
   }
 
-  FSX.bridge = { MIN_GAP_MS, normalizeHost, toResponse, makeFetch, makeClient, pickProduct, store, connect };
+  FSX.bridge = { MAX_PER_WINDOW, WINDOW_MS, makeLimiter, normalizeHost, toResponse, makeFetch, makeClient, pickProduct, store, connect };
 })(globalThis);

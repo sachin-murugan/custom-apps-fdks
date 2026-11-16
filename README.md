@@ -24,10 +24,15 @@ session. Instead:
   (`config/requests.json`, `app/scripts/bridge.js`). The exporter code in
   `app/scripts/lib/` is the extension's code (edited only to pass the CLI's lint rules); `bridge.js` gives it a `fetch`
   that calls `client.request.invokeTemplate`.
-- **Speed**: the platform allows 50 Request Method calls a minute per installation, so the
-  apps space requests 1.3 s apart. A list view still exports at about 4,500 records a
-  minute (100 per request). Anything that needs one request per record (full details,
-  field history) runs at about 45 records a minute.
+- **Speed**: the platform allows 50 Request Method calls a minute per installation. The
+  apps send requests as fast as they can until 45 have gone out in the last minute, then
+  pause until the window frees up (the progress screen says so). A small export finishes
+  at full speed; a list view exports up to about 4,500 records a minute (100 per request).
+  Anything that needs one request per record (full details, field history) runs at about
+  45 records a minute. Lookup lists are fetched only for the module being exported and
+  are remembered for an hour.
+- **Progress**: an export switches the page to a progress screen with the record count,
+  a progress bar, the time elapsed and an estimate of the time left, and a Cancel button.
 - **Picking the page**: an app can't see which Freshsales page is open (except on a
   record's app menu), so you paste the page address or pick the module and view.
 

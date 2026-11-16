@@ -14,45 +14,55 @@
       <div id="account" class="muted">Connecting…</div>
     </header>
 
+    <div id="setup">
+      <p id="notice" class="notice" role="alert" hidden></p>
     <section>
       <h2>Which list view?</h2>
       <div class="field">
         <label class="label" for="url">Paste the list view's address</label>
-        <input type="url" id="url" placeholder="https://yourcompany.myfreshworks.com/crm/sales/contacts/view/123" data-busy-disable />
+        <input type="url" id="url" placeholder="https://yourcompany.myfreshworks.com/crm/sales/contacts/view/123" />
         <div id="url-hint" class="muted small"></div>
       </div>
-      <div class="field muted small">or pick it</div>
+      <div class="or">or pick it</div>
       <div class="row">
         <div class="field">
           <label class="label" for="module">Module</label>
-          <select id="module" data-busy-disable></select>
+          <select id="module"></select>
         </div>
         <div class="field">
           <label class="label" for="view">Saved view</label>
-          <select id="view" data-busy-disable disabled></select>
+          <select id="view" disabled></select>
         </div>
       </div>
       <div class="field" id="custom-field" hidden>
         <label class="label" for="custom">Custom module key</label>
-        <input type="text" id="custom" placeholder="cm_projects" data-busy-disable />
+        <input type="text" id="custom" placeholder="cm_projects" />
       </div>
     </section>
 
     <section>
       <h2>Options</h2>
-      <label class="check"><input type="checkbox" id="ask-columns" checked data-busy-disable /> <span>Let me choose the columns before the file is saved</span></label>
-      <label class="check"><input type="checkbox" id="enrich" data-busy-disable /> <span>Load full details for every record <span class="muted">(one extra request per record, about 45 records a minute)</span></span></label>
+      <label class="check"><input type="checkbox" id="ask-columns" checked /> <span>Let me choose the columns before the file is saved</span></label>
+      <label class="check"><input type="checkbox" id="enrich" /> <span>Load full details for every record <span class="muted">(slower: one extra request per record)</span></span></label>
     </section>
 
-    <button id="export" class="primary" disabled data-busy-disable>Export to CSV</button>
-    <button id="cancel" hidden>Cancel</button>
-
-    <div id="progress" hidden>
-      <div class="bar"><div id="bar-fill"></div></div>
-      <div id="progress-text" class="muted"></div>
+    <button id="export" class="primary" disabled>Export to CSV</button>
     </div>
-    <a id="download" hidden></a>
-    <p id="error" class="error" hidden></p>
+
+    <div id="run" hidden>
+      <section>
+        <div id="run-title">Exporting…</div>
+        <div class="run-stats"><span id="run-count"></span><span id="run-percent"></span></div>
+        <div class="bar" id="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-labelledby="run-title"><div id="bar-fill"></div></div>
+        <div id="progress-text" class="muted" aria-live="polite"></div>
+        <div id="run-time" class="muted small"></div>
+        <div id="run-pause" class="pause small" hidden></div>
+        <p id="error" class="error" hidden></p>
+        <a id="download" class="button primary" hidden></a>
+        <button id="cancel" hidden>Cancel export</button>
+        <button id="back" hidden>Export something else</button>
+      </section>
+    </div>
   </main>
 
   <script src="scripts/lib/platform.js"></script>
