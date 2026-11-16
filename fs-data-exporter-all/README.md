@@ -45,7 +45,7 @@ Chrome extension; `app/scripts/lib/` is that extension's code, with edits only t
 
 | Setting | Value |
 |---|---|
-| Freshsales domain | `yourcompany.myfreshworks.com`, `yourcompany.freshsales.io` or your custom domain, without `https://` |
+| Freshsales domain | `yourcompany.myfreshworks.com`, `yourcompany.freshsales.io` or your custom domain (with or without `https://`) |
 | Freshsales API key | Profile picture > Settings > API settings. The export sees what this user can see. |
 
 ## To confirm on the first live run

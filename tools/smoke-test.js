@@ -42,7 +42,7 @@ function stubClient() {
     throw { status: 404, response: 'not found' };
   }
   const fw = {
-    iparams: { get: async () => ({ crmDomain: 'acme.myfreshworks.com' }) },
+    iparams: { get: async () => ({ crmDomain: 'https://Acme.myfreshworks.com/' }) },
     data: {
       // window.__entity is set by the test when the app is opened on a record.
       get: async () => {
@@ -53,6 +53,8 @@ function stubClient() {
     request: {
       invokeTemplate: async (name, opts) => {
         calls.push({ name, path: opts.context.path, at: Date.now() });
+        // The saved domain has a protocol and a slash; the template must get a bare host.
+        if (opts.context.host !== 'acme.myfreshworks.com') throw { status: 400, response: `bad host ${opts.context.host}` };
         return answer(name === 'crmPost' ? 'POST' : 'GET', opts.context.path, opts.body);
       },
     },

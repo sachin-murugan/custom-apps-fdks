@@ -1,13 +1,9 @@
 {
   "crmDomain": {
     "display_name": "Freshsales domain",
-    "description": "The address you open Freshsales on, without https://. For example yourcompany.myfreshworks.com, yourcompany.freshsales.io or crm.yourcompany.com.",
+    "description": "The address you open Freshsales on, for example yourcompany.myfreshworks.com, yourcompany.freshsales.io or crm.yourcompany.com.",
     "type": "text",
-    "required": true,
-    "regex": {
-      "domain-format": "^[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$",
-      "domain-format-error": "Enter only the domain, for example yourcompany.myfreshworks.com"
-    }
+    "required": true
   },
   "crmApiKey": {
     "display_name": "Freshsales API key",

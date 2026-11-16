@@ -2,7 +2,7 @@
   "crmGet": {
     "schema": {
       "method": "GET",
-      "host": "<%= iparam.crmDomain %>",
+      "host": "<%= context.host %>",
       "path": "<%= context.path %>",
       "headers": {
         "Authorization": "Token token=<%= iparam.crmApiKey %>",
@@ -14,7 +14,7 @@
   "crmPost": {
     "schema": {
       "method": "POST",
-      "host": "<%= iparam.crmDomain %>",
+      "host": "<%= context.host %>",
       "path": "<%= context.path %>",
       "headers": {
         "Authorization": "Token token=<%= iparam.crmApiKey %>",

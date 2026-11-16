@@ -27,20 +27,14 @@ Chrome extension; `app/scripts/lib/` is that extension's code, with edits only t
 
 | Setting | Value |
 |---|---|
-| Freshsales domain | `yourcompany.myfreshworks.com` or your custom domain, without `https://` |
+| Freshsales domain | `yourcompany.myfreshworks.com` or your custom domain (with or without `https://`) |
 | Freshsales API key | Profile picture > Settings > API settings. The export sees what this user can see. |
 
 ## To confirm on the first live run
 
-This app carries the most risk of the three.
-
-- Field edit history (`POST /crm/sales/<module>/<id>/field_history`), the activity timeline
-  (`/timeline_feeds`), tracked fields (`/settings/<module>/forms`) and workflow history
-  (`/workflow_automations/audit_logs`) are the web app's own screens' requests, not
-  documented API endpoints. The extension calls them with the browser session and CSRF
-  token. **Whether Freshsales accepts an API key on them is not confirmed.** If it doesn't,
-  the app reports that the data may only be available to a logged-in browser session, and
-  the Chrome extension remains the way to get it.
-- On a record, the app reads the record from `client.data.get("currentEntityInfo")`. If
-  that returns nothing the app falls back to asking for an address.
+- Confirmed on a live Freshworks CRM account (2026-11-16, through `fdk run`): field edit
+  history, the activity timeline, tracked fields and the record lookup all accept the API
+  key. Workflow action history and classic `freshsales.io` accounts are not yet confirmed.
+- Confirmed: on a record, the app reads the record from
+  `client.data.get("currentEntityInfo")`.
 - Everything in the [list view exporter's list](../fs-list-view-exporter/README.md#to-confirm-on-the-first-live-run).

@@ -44,8 +44,9 @@
   }
 
   /**
-   * A fetch() stand-in for CRMClient. Only the path and query of the URL are used: the host
-   * and the Authorization header come from the request template.
+   * A fetch() stand-in for CRMClient. The request template takes the host and path from the
+   * context and adds the Authorization header itself. The host is passed cleaned up because a
+   * template can't tidy the saved setting, and the platform rejects a host with "https://".
    */
   function makeFetch(fw, { minGapMs = MIN_GAP_MS, sleepImpl = sleep, now = Date.now } = {}) {
     let queue = Promise.resolve();
@@ -69,7 +70,7 @@
     return async function fsxFetch(url, init) {
       const u = new URL(url);
       const path = u.pathname + u.search;
-      const options = { context: { path } };
+      const options = { context: { host: u.host, path } };
       const method = String((init && init.method) || 'GET').toUpperCase();
       if (init && init.body !== undefined) options.body = init.body;
       if (cache.has(path) && cacheable(method, path)) return toResponse(cache.get(path));
