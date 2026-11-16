@@ -1,4 +1,4 @@
-# custom_apps
+# custom-apps-fdks
 
 Freshworks CRM (Freshsales) marketplace apps, built with the Freshworks Developer Kit on
 platform version 3.0 (global apps). Each folder is one self-contained FDK app, ported from
