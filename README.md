@@ -7,7 +7,7 @@ the Chrome extension of the same name.
 | Folder | What it exports | Where it shows up in Freshsales |
 |---|---|---|
 | [`fs-list-view-exporter`](fs-list-view-exporter) | Every record of a saved list view, to CSV | Full-page app (left navigation) |
-| [`fs-data-exporter-all`](fs-data-exporter-all) | List views, plus account data: users, marketing lists and their contacts, segments, sequences, workflows, reports list, campaigns, journeys, tasks, meetings, sales activities | Full-page app |
+| [`fs-data-exporter-all`](fs-data-exporter-all) | List views, plus account data: users, marketing lists and their contacts, sequences, workflows, reports list, tasks, meetings, sales activities | Full-page app |
 | [`fs-field-edit-history`](fs-field-edit-history) | Field edit history of a list view or record, a record's activity timeline, a workflow's action history | Full-page app, and the app menu on a contact, account or deal |
 
 ## How the apps differ from the extensions
@@ -36,7 +36,21 @@ session. Instead:
 - **Picking the page**: an app can't see which Freshsales page is open (except on a
   record's app menu), so you paste the page address or pick the module and view.
 
-## Install as a custom app
+## Download and install
+
+Ready-to-upload zips are in [`zips/`](zips), built with `fdk pack` from this commit:
+
+- [`fs-list-view-exporter.zip`](zips/fs-list-view-exporter.zip)
+- [`fs-data-exporter-all.zip`](zips/fs-data-exporter-all.zip)
+- [`fs-field-edit-history.zip`](zips/fs-field-edit-history.zip)
+
+1. Download the zip (open it on GitHub and click **Download raw file**).
+2. In the [Freshworks developer portal](https://developers.freshworks.com/), create a
+   **Custom app** and upload the zip, then publish it to your account.
+3. In Freshsales open **Admin settings > Marketplace apps**, find the app under custom apps,
+   click **Install**, and paste your API key (profile picture > **Settings > API settings**).
+
+## Build the zips yourself
 
 You need the Freshworks CLI (`fdk`), see
 <https://developers.freshworks.com/docs/app-sdk/v3.0/common/app-development-process/>.
@@ -49,10 +63,7 @@ fdk validate
 fdk pack -s                   # skip the coverage gate; writes dist/<folder>.zip
 ```
 
-Then in the [Freshworks developer portal](https://developers.freshworks.com/) create a
-**Custom app**, upload the zip and publish it to your account. In Freshsales open
-**Admin settings > Marketplace apps**, install it, and enter your API key
-(profile picture > **Settings > API settings**).
+Then upload it as above. After changing an app, rebuild its zip and copy it into `zips/`.
 
 Full-page apps can't be previewed with `fdk run`; Freshworks requires publishing them as a
 custom app to try them.
@@ -61,5 +72,9 @@ custom app to try them.
 
 - Each app is checked headlessly against a mock Freshsales account
   (`node tools/smoke-test.js`, needs Playwright).
-- None of them has been installed on a live Freshsales account yet. Things to confirm on
-  the first live run are listed in each app's README.
+- All three were tested live on 2026-11-17 in dev mode (`fdk run` + `?dev=true`) on a
+  myfreshworks.com account: list views of 1,164 contacts and 874 deals, marketing list
+  members, workflows, users, field edit history and timelines. Classic freshsales.io
+  accounts are not tested yet.
+- Segments, email campaigns and journeys are not offered: Freshworks' marketing API does
+  not accept API keys. The Chrome extension still exports them.
