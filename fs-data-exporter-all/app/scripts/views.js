@@ -97,12 +97,21 @@
 
     fillSelect($('module'), modules, 'Choose a module');
     fillSelect($('view'), [], 'Pick a module first');
+    // Picking by hand replaces a pasted address, so the form never shows two different views.
+    const clearUrl = () => {
+      $('url').value = '';
+      $('url-hint').textContent = '';
+    };
     $('module').addEventListener('change', () => {
+      clearUrl();
       show($('custom-field'), $('module').value === 'custom');
       loadViews();
     });
     $('custom').addEventListener('change', () => loadViews());
-    $('view').addEventListener('change', changed);
+    $('view').addEventListener('change', () => {
+      clearUrl();
+      changed();
+    });
     $('url').addEventListener('input', useUrl);
 
     return { current };

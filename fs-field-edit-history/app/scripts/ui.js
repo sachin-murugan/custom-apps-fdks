@@ -127,7 +127,8 @@
     pauseTimer = setTimeout(() => show(box, false), ms);
   }
 
-  const today = () => new Date().toISOString().slice(0, 10);
+  // Local date: a file saved at 3 AM in India is named for that day, not yesterday's UTC date.
+  const today = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const errorText = (err) => (err && err.message ? err.message : String(err));
 
   FSX.ui = { $, show, number, duration, renderState, showSetup, notice, hideNotice, downloadCsv, fillSelect, showPause, today, errorText };
