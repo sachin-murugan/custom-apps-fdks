@@ -30,8 +30,17 @@
     'meetings',
     'sales_activities',
   ];
-  // Not possible from an app: these read the open page's HTML or the analytics app's own session.
-  const unsupported = (key) => ACTIONS[key].dom || ACTIONS[key].analytics;
+  // Not possible from an app: these read the open page's HTML or the analytics app's own session,
+  // or call the marketing API (/crm/marketer/...), which answers an API key with its login page.
+  const NO_CLIENT = { apiPaths: () => [], settingsPaths: () => [], selectorPaths: () => [] };
+  const marketer = (key) => {
+    try {
+      return (ACTIONS[key].paths ? ACTIONS[key].paths(NO_CLIENT, '0') : []).some((p) => String(p).startsWith('/crm/marketer'));
+    } catch (_e) {
+      return false;
+    }
+  };
+  const unsupported = (key) => Boolean(ACTIONS[key].dom || ACTIONS[key].analytics || marketer(key));
 
   let running = null; // { aborted } while an export is in flight
   let picker = null;
@@ -190,7 +199,7 @@
       const rows = flattenRecords(records, fetcher.registry);
       const columns = await chooseColumns(columnsKey, unionFieldnames(rows), records.length, name);
       if (!columns) {
-        return paint({ status: 'done', title: 'Export cancelled', message: 'No file was saved. The fetched records are kept, so exporting again is quick.' });
+        return paint({ status: 'cancelled', title: 'Export cancelled', message: 'No file was saved. The fetched records are kept, so exporting again is quick.' });
       }
       downloadCsv(toCsv(rows, columns), `${sanitizeFilename(name)} ${today()}.csv`);
       await clearCheckpoint(key);
@@ -200,7 +209,7 @@
       log(message);
       const kept = await savedCount(key);
       const resumeNote = kept ? ` ${number(kept)} records are saved; export again to pick up from there.` : '';
-      if (/Export cancelled/.test(message)) paint({ status: 'done', title: 'Export cancelled', message: `No file was saved.${resumeNote}` });
+      if (/Export cancelled/.test(message)) paint({ status: 'cancelled', title: 'Export cancelled', message: `No file was saved.${resumeNote}` });
       else paint({ status: 'error', title: "Export didn't finish", message: friendlyError(message, def) + resumeNote });
     } finally {
       running = null;
@@ -221,7 +230,7 @@
   function renderActions() {
     const options = [
       ...pageJobs.map((j, i) => ({ value: `page:${i}`, label: j.label })),
-      ...ACCOUNT_ACTIONS.map((key) => ({ value: key, label: ACTIONS[key].label })),
+      ...ACCOUNT_ACTIONS.filter((key) => !unsupported(key)).map((key) => ({ value: key, label: ACTIONS[key].label })),
     ];
     fillSelect($('action'), options, 'Choose an export');
     if (pageJobs.length) $('action').value = 'page:0';
@@ -245,7 +254,12 @@
       if (page && page.actions.some((a) => a.key === 'view_records')) {
         $('page-hint').textContent = 'That is a list view. Paste it in the box at the top instead.';
       } else if (!actions.length) {
-        $('page-hint').textContent = page ? `Nothing extra to export for that page (${page.title}).` : "That address isn't a page this app knows.";
+        const marketing = page && page.actions.some((a) => marketer(a.key));
+        $('page-hint').textContent = marketing
+          ? `${page.title} can't be exported from the app: Freshworks' marketing API doesn't accept API keys. Use the browser extension for it.`
+          : page
+            ? `Nothing extra to export for that page (${page.title}).`
+            : "That address isn't a page this app knows.";
       } else {
         pageJobs = actions.map((a) => ({
           key: a.key,

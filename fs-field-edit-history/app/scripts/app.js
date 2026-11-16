@@ -262,7 +262,7 @@
       const saved = key && (await loadCkpt(key));
       const kept = saved ? (saved.idsDone ? `${saved.done} of ${saved.records.length} records done` : `${saved.records.length} records collected`) : '';
       const resumeNote = kept ? ` Progress is saved (${kept}); export again with the same settings to pick up from there.` : '';
-      if (/Export cancelled/.test(message)) paint({ status: 'done', title: 'Export cancelled', message: `No file was saved.${resumeNote}` });
+      if (/Export cancelled/.test(message)) paint({ status: 'cancelled', title: 'Export cancelled', message: `No file was saved.${resumeNote}` });
       else paint({ status: 'error', title: "Export didn't finish", message: friendlyError(message) + resumeNote });
     } finally {
       running = null;

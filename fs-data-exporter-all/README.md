@@ -11,12 +11,9 @@ Accounts, Deals, Leads (classic), Products, CPQ documents and custom modules.
 |---|---|
 | All users | |
 | All marketing lists | |
-| All segments | marketer app |
 | All sales sequences | |
 | All workflows | |
-| All reports (list) | the list of custom reports, not their contents |
-| All email campaigns, transactional emails, social media campaigns | marketer app |
-| All journeys | marketer app |
+| All reports (list) | the list of custom reports, not their contents; needs a plan with custom reports |
 | All tasks, meetings, sales activities | |
 
 **One item**: paste its page address to add these to the list:
@@ -24,10 +21,7 @@ Accounts, Deals, Leads (classic), Products, CPQ documents and custom modules.
 | Page | Export |
 |---|---|
 | Marketing list (`/contacts/list/<id>`) | Contacts in this list |
-| Segment | Contacts in this segment |
 | Sales sequence | Contacts in this sequence |
-| Email or transactional campaign | This campaign's stats |
-| Journey | This journey's steps and counts |
 | Email conversations folder | Emails in this folder |
 
 Progress is saved in the browser page by page. If an export fails or is cancelled, run it
@@ -40,6 +34,9 @@ Chrome extension; `app/scripts/lib/` is that extension's code, with edits only t
 
 - **A report's table** and **Suite analytics reports**. The extension reads these from the
   open page and from the analytics app's own session; an app can reach neither.
+- **Segments, email / transactional / social campaigns and journeys**. These live in the
+  marketing app (`/crm/marketer/...`), which answers an API key with its sign-in page
+  (checked live on 2026-11-17). Use the Chrome extension for them.
 
 ## Settings
 

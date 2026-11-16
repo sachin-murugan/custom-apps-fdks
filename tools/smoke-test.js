@@ -136,6 +136,9 @@ async function csvOf(page, click) {
     });
     assert.strictEqual(csv.lines.length, 151);
     await t.page.click('#back');
+    const offered = await t.page.$$eval('#action option', (os) => os.map((o) => o.value));
+    assert.ok(offered.includes('lists') && offered.includes('workflows'));
+    for (const key of ['segments', 'email_campaigns', 'journeys', 'social_campaigns']) assert.ok(!offered.includes(key), `${key} offered`);
     await t.page.selectOption('#action', 'lists');
     csv = await csvOf(t.page, async () => {
       await t.page.click('#export-action');

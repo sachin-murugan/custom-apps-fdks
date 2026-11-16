@@ -71,13 +71,13 @@
       paint({ message: `Building the CSV for ${number(records.length)} records…` });
       const rows = flattenRecords(records, fetcher.registry);
       const columns = await chooseColumns(view, unionFieldnames(rows), records.length);
-      if (!columns) return paint({ status: 'done', title: 'Export cancelled', message: 'No file was saved.' });
+      if (!columns) return paint({ status: 'cancelled', title: 'Export cancelled', message: 'No file was saved.' });
       downloadCsv(toCsv(rows, columns), `${sanitizeFilename(view.viewName)} ${today()}.csv`);
       paint({ status: 'done', title: `Exported ${view.viewName}`, count: `${number(records.length)} records`, message: `${number(columns.length)} columns saved to your downloads.` });
     } catch (err) {
       log(errorText(err));
       const cancelled = /Export cancelled/.test(errorText(err));
-      paint(cancelled ? { status: 'done', title: 'Export cancelled', message: 'No file was saved.' } : { status: 'error', title: "Export didn't finish", message: friendlyError(errorText(err)) });
+      paint(cancelled ? { status: 'cancelled', title: 'Export cancelled', message: 'No file was saved.' } : { status: 'error', title: "Export didn't finish", message: friendlyError(errorText(err)) });
     } finally {
       running = null;
     }

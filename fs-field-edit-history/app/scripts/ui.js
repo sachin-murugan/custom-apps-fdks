@@ -60,11 +60,13 @@
     fill.classList.toggle('indeterminate', running && !known);
     fill.classList.toggle('done', state.status === 'done');
     fill.classList.toggle('failed', state.status === 'error');
+    fill.classList.toggle('stopped', state.status === 'cancelled');
     fill.style.width = running && !known ? '' : `${Math.round(fraction * 100)}%`;
     $('bar').setAttribute('aria-valuenow', String(Math.round(fraction * 100)));
     $('run-percent').textContent = known ? `${Math.round(fraction * 100)}%` : '';
     if (state.count !== undefined) $('run-count').textContent = state.count;
     if (running && state.count === undefined && !$('run-count').textContent) $('run-count').textContent = 'Starting…';
+    if (!running && $('run-count').textContent === 'Starting…') $('run-count').textContent = ''; // failed before the first page
 
     $('progress-text').textContent = state.status === 'error' ? '' : state.message || '';
     if (running) renderTime();
