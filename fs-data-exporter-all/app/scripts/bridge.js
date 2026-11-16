@@ -33,11 +33,13 @@
     const status = Number(res.status);
     const body = res.response === undefined || res.response === null ? '' : res.response;
     const text = typeof body === 'string' ? body : JSON.stringify(body);
+    // The platform explains its own rejections (bad template, failed validation) in `errors`.
+    const detail = Array.isArray(res.errors) && res.errors.length ? ` ${JSON.stringify(res.errors)}` : '';
     return {
       status,
       ok: status >= 200 && status < 300,
       headers: { get: headerGetter(res.headers) },
-      text: () => Promise.resolve(text),
+      text: () => Promise.resolve(text + detail),
     };
   }
 
