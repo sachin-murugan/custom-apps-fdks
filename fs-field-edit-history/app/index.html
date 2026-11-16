@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FS Field Edit History</title>
+  <script src="{{{appclient}}}"></script>
+  <link rel="stylesheet" href="styles/style.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Field Edit History</h1>
+      <div id="account" class="muted">Connecting…</div>
+    </header>
+
+    <section id="picker">
+      <h2>What to export</h2>
+      <div class="field">
+        <label class="label" for="url">Paste the address of a list view, a record or a workflow</label>
+        <input type="url" id="url" placeholder="https://yourcompany.myfreshworks.com/crm/sales/contacts/view/123" data-busy-disable />
+        <div id="url-hint" class="muted small"></div>
+      </div>
+      <div class="field muted small">or pick a Contacts, Accounts or Deals list view</div>
+      <div class="row">
+        <div class="field">
+          <label class="label" for="module">Module</label>
+          <select id="module" data-busy-disable></select>
+        </div>
+        <div class="field">
+          <label class="label" for="view">Saved view</label>
+          <select id="view" data-busy-disable disabled></select>
+        </div>
+      </div>
+      <div class="field" id="custom-field" hidden><input type="text" id="custom" /></div>
+    </section>
+
+    <p id="hint" class="muted">Choose what to export.</p>
+
+    <form id="form" hidden>
+      <section>
+        <span class="label" id="target-label">Selected</span>
+        <strong id="target-name"></strong>
+      </section>
+
+      <section>
+        <span class="label">Changed between (leave blank for all history)</span>
+        <div class="row">
+          <label>From <input type="datetime-local" id="from" step="1" data-busy-disable /></label>
+          <label>To <input type="datetime-local" id="to" step="1" data-busy-disable /></label>
+        </div>
+      </section>
+
+      <section id="fields-section">
+        <span class="label">Tracked fields <span id="field-count"></span></span>
+        <input type="search" id="field-search" placeholder="Search fields" />
+        <div class="links"><a href="#" id="all">Select all</a> · <a href="#" id="none">Clear</a></div>
+        <div id="fields"></div>
+      </section>
+
+      <button type="submit" id="export" class="primary" data-busy-disable>Export field edit history</button>
+      <button type="button" id="export-timeline" hidden data-busy-disable>Export activity timeline</button>
+      <button type="button" id="export-workflow" class="primary" hidden data-busy-disable>Export workflow action history</button>
+      <p id="pace" class="muted small">Field history takes one request per record, and the app platform allows about 45 a minute.</p>
+    </form>
+
+    <button id="cancel" hidden>Cancel</button>
+    <div id="progress" hidden>
+      <div class="bar"><div id="bar-fill"></div></div>
+      <div id="progress-text" class="muted"></div>
+    </div>
+    <a id="download" hidden></a>
+    <p id="error" class="error" hidden></p>
+  </main>
+
+  <script src="scripts/lib/platform.js"></script>
+  <script src="scripts/lib/client.js"></script>
+  <script src="scripts/lib/lookups.js"></script>
+  <script src="scripts/lib/flatten.js"></script>
+  <script src="scripts/lib/csv.js"></script>
+  <script src="scripts/lib/fetcher.js"></script>
+  <script src="scripts/lib/history.js"></script>
+  <script src="scripts/lib/activity.js"></script>
+  <script src="scripts/bridge.js"></script>
+  <script src="scripts/ui.js"></script>
+  <script src="scripts/views.js"></script>
+  <script src="scripts/app.js"></script>
+</body>
+</html>

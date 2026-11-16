@@ -1,0 +1,14 @@
+{
+  "crmGet": {
+    "schema": {
+      "method": "GET",
+      "host": "<%= iparam.crm_domain %>",
+      "path": "<%= context.path %>",
+      "headers": {
+        "Authorization": "Token token=<%= iparam.api_key %>",
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      }
+    }
+  }
+}

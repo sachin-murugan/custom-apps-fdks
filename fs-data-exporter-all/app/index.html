@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FS Data Exporter</title>
+  <script src="{{{appclient}}}"></script>
+  <link rel="stylesheet" href="styles/style.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <h1>FS Data Exporter</h1>
+      <div id="account" class="muted">Connecting…</div>
+    </header>
+
+    <section>
+      <h2>Export a list view</h2>
+      <div class="field">
+        <label class="label" for="url">Paste the list view's address</label>
+        <input type="url" id="url" placeholder="https://yourcompany.myfreshworks.com/crm/sales/contacts/view/123" data-busy-disable />
+        <div id="url-hint" class="muted small"></div>
+      </div>
+      <div class="field muted small">or pick it</div>
+      <div class="row">
+        <div class="field">
+          <label class="label" for="module">Module</label>
+          <select id="module" data-busy-disable></select>
+        </div>
+        <div class="field">
+          <label class="label" for="view">Saved view</label>
+          <select id="view" data-busy-disable disabled></select>
+        </div>
+      </div>
+      <div class="field" id="custom-field" hidden>
+        <label class="label" for="custom">Custom module key</label>
+        <input type="text" id="custom" placeholder="cm_projects" data-busy-disable />
+      </div>
+      <label class="check"><input type="checkbox" id="enrich" data-busy-disable /> <span>Load full details for every record <span class="muted">(one extra request per record, about 45 records a minute)</span></span></label>
+      <button id="export-view" class="primary" disabled data-busy-disable>Export this view to CSV</button>
+    </section>
+
+    <section>
+      <h2>Export account data</h2>
+      <div class="field">
+        <label class="label" for="action">What to export</label>
+        <select id="action" data-busy-disable></select>
+      </div>
+      <div class="field">
+        <label class="label" for="page-url">For one list, segment, sequence, campaign, journey or email folder, paste its page address</label>
+        <input type="url" id="page-url" placeholder="https://yourcompany.myfreshworks.com/crm/sales/contacts/list/45" data-busy-disable />
+        <div id="page-hint" class="muted small"></div>
+      </div>
+      <button id="export-action" class="primary" disabled data-busy-disable>Export to CSV</button>
+    </section>
+
+    <section>
+      <label class="check"><input type="checkbox" id="ask-columns" checked data-busy-disable /> <span>Let me choose the columns before the file is saved</span></label>
+    </section>
+
+    <button id="cancel" hidden>Cancel</button>
+    <div id="progress" hidden>
+      <div class="bar"><div id="bar-fill"></div></div>
+      <div id="progress-text" class="muted"></div>
+    </div>
+    <a id="download" hidden></a>
+    <p id="error" class="error" hidden></p>
+  </main>
+
+  <script src="scripts/lib/platform.js"></script>
+  <script src="scripts/lib/client.js"></script>
+  <script src="scripts/lib/lookups.js"></script>
+  <script src="scripts/lib/flatten.js"></script>
+  <script src="scripts/lib/csv.js"></script>
+  <script src="scripts/lib/columns.js"></script>
+  <script src="scripts/lib/fetcher.js"></script>
+  <script src="scripts/lib/pages.js"></script>
+  <script src="scripts/lib/column-picker.js"></script>
+  <script src="scripts/bridge.js"></script>
+  <script src="scripts/ui.js"></script>
+  <script src="scripts/views.js"></script>
+  <script src="scripts/app.js"></script>
+</body>
+</html>

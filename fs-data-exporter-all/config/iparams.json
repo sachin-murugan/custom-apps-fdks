@@ -1,0 +1,19 @@
+{
+  "crm_domain": {
+    "display_name": "Freshsales domain",
+    "description": "The address you open Freshsales on, without https://. For example yourcompany.myfreshworks.com, yourcompany.freshsales.io or crm.yourcompany.com.",
+    "type": "text",
+    "required": true,
+    "regex": {
+      "domain-format": "^[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$",
+      "domain-format-error": "Enter only the domain, for example yourcompany.myfreshworks.com"
+    }
+  },
+  "api_key": {
+    "display_name": "Freshsales API key",
+    "description": "In Freshsales, open your profile picture > Settings > API settings and copy the API key. Exports see what this user can see.",
+    "type": "text",
+    "required": true,
+    "secure": true
+  }
+}
