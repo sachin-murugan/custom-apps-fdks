@@ -214,7 +214,7 @@
             renderState({ status: 'running', message: status, page: p.page, totalPages: p.totalPages });
           },
           onPageRecords: async (page, records) => {
-            meta.records.push(...records.filter((r) => r && r.id != null).map((r) => ({ id: r.id, name: H.recordName(r) })));
+            meta.records.push(...records.filter((r) => r && ![null, undefined].includes(r.id)).map((r) => ({ id: r.id, name: H.recordName(r) })));
             meta.nextPage = page + 1;
             await save(meta);
           },
@@ -288,7 +288,7 @@
   function range() {
     const fromMs = toMs($('from').value);
     const to = toMs($('to').value);
-    if (fromMs != null && to != null && fromMs > to) {
+    if (![null, undefined].includes(fromMs) && ![null, undefined].includes(to) && fromMs > to) {
       renderState({ status: 'error', message: '"From" is after "To".' });
       return null;
     }

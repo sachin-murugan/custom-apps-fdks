@@ -19,15 +19,15 @@
    * in the account's time zone, so pad a day each side; exact bounds are applied by inRange().
    */
   function dateFilter(fromMs, toMs, now = Date.now()) {
-    const from = fromMs == null ? EARLIEST : isoDay(fromMs - DAY);
-    const to = isoDay((toMs == null ? now : toMs) + DAY);
+    const from = [null, undefined].includes(fromMs) ? EARLIEST : isoDay(fromMs - DAY);
+    const to = isoDay(([null, undefined].includes(toMs) ? now : toMs) + DAY);
     return `${from},${to}`;
   }
 
   function inRange(updatedAt, fromMs, toMs) {
     const t = Date.parse(updatedAt);
     if (Number.isNaN(t)) return true; // never drop a change we can't date
-    return (fromMs == null || t >= fromMs) && (toMs == null || t <= toMs);
+    return ([null, undefined].includes(fromMs) || t >= fromMs) && ([null, undefined].includes(toMs) || t <= toMs);
   }
 
   /** All fields from a module's forms response, nested sections flattened. */

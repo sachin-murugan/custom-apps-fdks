@@ -14,7 +14,7 @@ Options: **Load full details for every record** merges each record's detail API 
 into its row. It needs one request per record, so it runs at about 45 records a minute.
 
 Ported from the [fs-list-view-exporter](https://github.com/sachin-murugan/fs-list-view-exporter)
-Chrome extension; `app/scripts/lib/` is that extension's code unchanged.
+Chrome extension; `app/scripts/lib/` is that extension's code, with edits only to satisfy `fdk validate`'s lint rules.
 
 ## Settings
 

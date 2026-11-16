@@ -2,10 +2,10 @@
   "crmGet": {
     "schema": {
       "method": "GET",
-      "host": "<%= iparam.crm_domain %>",
+      "host": "<%= iparam.crmDomain %>",
       "path": "<%= context.path %>",
       "headers": {
-        "Authorization": "Token token=<%= iparam.api_key %>",
+        "Authorization": "Token token=<%= iparam.crmApiKey %>",
         "Accept": "application/json",
         "Content-Type": "application/json"
       }
@@ -14,10 +14,10 @@
   "crmPost": {
     "schema": {
       "method": "POST",
-      "host": "<%= iparam.crm_domain %>",
+      "host": "<%= iparam.crmDomain %>",
       "path": "<%= context.path %>",
       "headers": {
-        "Authorization": "Token token=<%= iparam.api_key %>",
+        "Authorization": "Token token=<%= iparam.crmApiKey %>",
         "Accept": "application/json",
         "Content-Type": "application/json"
       }

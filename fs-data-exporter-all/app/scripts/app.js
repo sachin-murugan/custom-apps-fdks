@@ -146,7 +146,7 @@
       const resume = saved ? { startPage: saved.nextPage, initial: saved.records } : {};
       renderState({ status: 'running', message: saved ? `Resuming: ${saved.records.length} records already saved…` : 'Loading lookups…' });
       const onProgress = (p) => {
-        fetchedSoFar = p.fetched != null ? p.fetched : fetchedSoFar;
+        fetchedSoFar = ![null, undefined].includes(p.fetched) ? p.fetched : fetchedSoFar;
         renderState(
           p.phase === 'detail'
             ? { status: 'running', message: `Loading full details: ${p.enriched} of ${p.total} records`, page: p.enriched, totalPages: p.total }

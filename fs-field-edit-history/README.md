@@ -21,7 +21,7 @@ is saved in the browser; if a run fails or is cancelled, export again with the s
 settings and it continues (kept for 24 hours).
 
 Ported from the [fs-field-edit-history](https://github.com/sachin-murugan/fs-field-edit-history)
-Chrome extension; `app/scripts/lib/` is that extension's code unchanged.
+Chrome extension; `app/scripts/lib/` is that extension's code, with edits only to satisfy `fdk validate`'s lint rules.
 
 ## Settings
 

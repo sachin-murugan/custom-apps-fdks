@@ -138,7 +138,7 @@
       if (lookupType) this.lookupFields[fld.name] = normalizeBucket(String(lookupType));
     }
 
-    async loadSelectors(client, log = () => {}) {
+    async loadSelectors(client, log = () => undefined) {
       await Promise.all(
         SELECTOR_RESOURCES.map(async (resource) => {
           try {

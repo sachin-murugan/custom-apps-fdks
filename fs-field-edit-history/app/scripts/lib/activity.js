@@ -39,7 +39,7 @@
     client.style.platform === 'classic' ? [suffix, `/crm/sales${suffix}`] : [`/crm/sales${suffix}`, suffix];
 
   /** Every timeline entry for one record (all activity types), newest first, within [fromMs, toMs]. */
-  async function fetchTimeline(client, mod, id, { fromMs = null, toMs = null, signal, onPage = () => {} } = {}) {
+  async function fetchTimeline(client, mod, id, { fromMs = null, toMs = null, signal, onPage = () => undefined } = {}) {
     let paths = webPaths(client, `/${mod.endpoint}/${id}/timeline_feeds`);
     const users = {};
     const rows = [];
@@ -65,7 +65,7 @@
       Group: a.group && a.group.name,
       'Related to': [a.targetable_type, a.targetable_name].filter(Boolean).join(': '),
       'Related ID': a.targetable_id,
-      'Done by': a.user_id != null ? users[a.user_id] || a.user_id : '',
+      'Done by': ![null, undefined].includes(a.user_id) ? users[a.user_id] || a.user_id : '',
       Automation: a.automation,
       Details: a.action_data,
     };
@@ -84,7 +84,7 @@
     return {
       'filter[0][attribute]': 'time_period',
       'filter[0][operator]': 'is_in_the_range',
-      'filter[0][value][]': [fromMs == null ? '01/01/2000' : ddmmyyyy(fromMs - DAY), ddmmyyyy((toMs == null ? now : toMs) + DAY)],
+      'filter[0][value][]': [[null, undefined].includes(fromMs) ? '01/01/2000' : ddmmyyyy(fromMs - DAY), ddmmyyyy(([null, undefined].includes(toMs) ? now : toMs) + DAY)],
       'filter[1][attribute]': 'status',
       'filter[1][value]': 'all',
       'filter[2][attribute]': 'workflow_automation_id',
@@ -93,7 +93,7 @@
   }
 
   /** Every action the workflow ran (successful and failed) within [fromMs, toMs], newest first. */
-  async function fetchWorkflowHistory(client, workflowId, { fromMs = null, toMs = null, signal, onPage = () => {} } = {}) {
+  async function fetchWorkflowHistory(client, workflowId, { fromMs = null, toMs = null, signal, onPage = () => undefined } = {}) {
     let paths = webPaths(client, '/workflow_automations/audit_logs');
     const rows = [];
     let token = null;

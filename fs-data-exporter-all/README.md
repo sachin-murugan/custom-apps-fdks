@@ -34,7 +34,7 @@ Progress is saved in the browser page by page. If an export fails or is cancelle
 again and it continues where it stopped (kept for 24 hours).
 
 Ported from the [fs-data-exporter-all](https://github.com/sachin-murugan/fs-data-exporter-all)
-Chrome extension; `app/scripts/lib/` is that extension's code unchanged.
+Chrome extension; `app/scripts/lib/` is that extension's code, with edits only to satisfy `fdk validate`'s lint rules.
 
 ## Not available in the app
 

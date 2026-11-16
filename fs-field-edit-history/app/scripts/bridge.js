@@ -37,7 +37,7 @@
       status,
       ok: status >= 200 && status < 300,
       headers: { get: headerGetter(res.headers) },
-      text: async () => text,
+      text: () => Promise.resolve(text),
     };
   }
 
@@ -111,28 +111,32 @@
   // set() throws when the browser refuses (quota, storage blocked); callers treat that as
   // "no checkpoint".
   const PREFIX = 'fsx:';
+  const later = (fn) => Promise.resolve().then(fn);
   const store = {
-    async get(keys) {
-      const out = {};
-      for (const k of [].concat(keys)) {
-        const raw = root.localStorage.getItem(PREFIX + k);
-        if (raw !== null) out[k] = JSON.parse(raw);
-      }
-      return out;
-    },
-    async set(items) {
-      for (const k of Object.keys(items)) root.localStorage.setItem(PREFIX + k, JSON.stringify(items[k]));
-    },
-    async remove(keys) {
-      for (const k of [].concat(keys)) root.localStorage.removeItem(PREFIX + k);
-    },
+    get: (keys) =>
+      later(() => {
+        const out = {};
+        for (const k of [].concat(keys)) {
+          const raw = root.localStorage.getItem(PREFIX + k);
+          if (raw !== null) out[k] = JSON.parse(raw);
+        }
+        return out;
+      }),
+    set: (items) =>
+      later(() => {
+        for (const k of Object.keys(items)) root.localStorage.setItem(PREFIX + k, JSON.stringify(items[k]));
+      }),
+    remove: (keys) =>
+      later(() => {
+        for (const k of [].concat(keys)) root.localStorage.removeItem(PREFIX + k);
+      }),
   };
 
   /** Wait for the platform client and read the account domain from the installation settings. */
   async function connect() {
     const fw = await root.app.initialized();
     const iparams = await fw.iparams.get();
-    const host = normalizeHost(iparams.crm_domain);
+    const host = normalizeHost(iparams.crmDomain);
     if (!host) throw new Error('No Freshsales domain is set. Open the app settings and enter it.');
     return { fw, host, fetchImpl: makeFetch(fw, typeof FSX.minGapMs === 'number' ? { minGapMs: FSX.minGapMs } : {}) };
   }

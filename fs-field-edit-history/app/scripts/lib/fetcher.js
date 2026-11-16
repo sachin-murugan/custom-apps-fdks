@@ -119,14 +119,14 @@
       mod,
       viewId,
       {
-        log = () => {},
-        onProgress = () => {},
+        log = () => undefined,
+        onProgress = () => undefined,
         signal,
         enrichDetails = false,
         concurrency = DETAIL_CONCURRENCY,
         startPage = 1,
         initial = [],
-        onPageRecords = async () => {},
+        onPageRecords = () => Promise.resolve(),
       } = {}
     ) {
       this.registry = new LookupRegistry();
@@ -172,7 +172,7 @@
      * often leave association objects empty). Records without an id are dropped, as in the
      * desktop exporter; a failed detail fetch keeps the list row.
      */
-    async enrichRecords(mod, records, { log = () => {}, onProgress = () => {}, signal, concurrency = DETAIL_CONCURRENCY } = {}) {
+    enrichRecords(mod, records, { log = () => undefined, onProgress = () => undefined, signal, concurrency = DETAIL_CONCURRENCY } = {}) {
       const withIds = records.filter(hasId);
       const total = withIds.length;
       log(`Enriching ${total} records via detail API (${concurrency} at a time)…`);

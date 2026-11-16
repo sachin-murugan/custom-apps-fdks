@@ -21,7 +21,7 @@ session. Instead:
   never sent to the browser.
 - **Requests**: every call goes through the platform's Request Method
   (`config/requests.json`, `app/scripts/bridge.js`). The exporter code in
-  `app/scripts/lib/` is the extension's code, unchanged; `bridge.js` gives it a `fetch`
+  `app/scripts/lib/` is the extension's code (edited only to pass the CLI's lint rules); `bridge.js` gives it a `fetch`
   that calls `client.request.invokeTemplate`.
 - **Speed**: the platform allows 50 Request Method calls a minute per installation, so the
   apps space requests 1.3 s apart. A list view still exports at about 4,500 records a

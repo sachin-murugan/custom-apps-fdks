@@ -45,7 +45,7 @@
       this.fetch = fetchImpl || root.fetch.bind(root);
       this.retryDelay = (attempt, cap) => Math.min(2 ** attempt, cap) * 1000;
       this.sleep = sleepImpl || sleep;
-      this.onRetry = onRetry || (() => {});
+      this.onRetry = onRetry || (() => undefined);
       this.extraHeaders = extraHeaders || {};
     }
 

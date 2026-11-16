@@ -172,12 +172,12 @@
       startPage = 1,
       initial = [],
       signal,
-      onPage = () => {},
-      onPageRecords = async () => {},
+      onPage = () => undefined,
+      onPageRecords = () => Promise.resolve(),
     } = {}
   ) {
     const out = [...initial];
-    const seen = new Set(out.filter((i) => isObj(i) && i.id != null).map((i) => String(i.id)));
+    const seen = new Set(out.filter((i) => isObj(i) && ![null, undefined].includes(i.id)).map((i) => String(i.id)));
     let path = null;
     for (let page = startPage; page <= MAX_PAGES; page++) {
       if (signal && signal.aborted) throw new Error('Export cancelled');
@@ -186,13 +186,13 @@
       const res = await client.getFirst(path ? [path] : paths, query, { accept: (d) => pickArray(d, keys, single) !== null });
       path = res.path;
       const items = transform(res.data, pickArray(res.data, keys, single));
-      const fresh = items.filter((i) => !(isObj(i) && i.id != null && seen.has(String(i.id))));
-      fresh.forEach((i) => isObj(i) && i.id != null && seen.add(String(i.id)));
+      const fresh = items.filter((i) => !(isObj(i) && ![null, undefined].includes(i.id) && seen.has(String(i.id))));
+      fresh.forEach((i) => isObj(i) && ![null, undefined].includes(i.id) && seen.add(String(i.id)));
       out.push(...fresh);
       await onPageRecords(page, fresh);
       const meta = (res.data && res.data.meta) || {};
       const totalPages = Number(meta.total_pages) || 0;
-      const total = Number(meta.total != null ? meta.total : meta.total_items) || 0;
+      const total = Number(![null, undefined].includes(meta.total) ? meta.total : meta.total_items) || 0;
       onPage({ page, fetched: out.length, totalPages });
       // When total_pages is known it decides alone: sequence drill-downs have empty pages mid-way
       // (page 4 of 46 was empty live), so an empty page is not the end.
@@ -227,7 +227,8 @@
   function withRecipients(data, emails) {
     const byId = new Map(((data && data.email_conversation_recipients) || []).map((r) => [r.id, r]));
     return (emails || []).map((e) => {
-      const { html_content, current_html_content, shrink_content, email_conversation_recipient_ids = [], ...rest } = e;
+      const { email_conversation_recipient_ids = [], ...rest } = e;
+      ['html_content', 'current_html_content', 'shrink_content'].forEach((k) => delete rest[k]);
       const recips = email_conversation_recipient_ids.map((rid) => byId.get(rid)).filter(Boolean);
       const out = { ...rest };
       for (const field of ['from', 'to', 'cc', 'bcc', 'reply_to']) {
@@ -271,7 +272,7 @@
   // can be "0" when the real value is set (funnels, live), so it's only the last resort.
   const cellValue = (cell) =>
     cell && typeof cell === 'object'
-      ? [cell.unFormattedValue, cell.value, cell.nonTruncatedValue].find((v) => v != null && v !== '')
+      ? [cell.unFormattedValue, cell.value, cell.nonTruncatedValue].find((v) => ![null, undefined].includes(v) && v !== '')
       : cell;
 
   /**
@@ -304,7 +305,7 @@
           const row = {};
           names.forEach((name, i) => {
             const cell = sv[`sheetColumn${i}`];
-            row[name] = cell && typeof cell === 'object' ? (cell.label != null ? cell.label : cellValue(cell)) : cell;
+            row[name] = cell && typeof cell === 'object' ? (![null, undefined].includes(cell.label) ? cell.label : cellValue(cell)) : cell;
           });
           push(row);
         }
@@ -342,7 +343,7 @@
         }
       }
       place();
-      const cells = Array.from(row, (v) => (v == null ? '' : v));
+      const cells = Array.from(row, (v) => ([null, undefined].includes(v) ? '' : v));
       const lines = cells.map((v) => v.split(/\n+/).map((s) => s.trim()));
       const height = Math.max(...lines.map((l) => l.length));
       for (let i = 0; i < height; i++) grid.push(lines.map((l) => (l.length === 1 ? l[0] : l[i] || '')));

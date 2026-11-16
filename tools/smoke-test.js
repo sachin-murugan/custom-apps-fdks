@@ -42,7 +42,7 @@ function stubClient() {
     throw { status: 404, response: 'not found' };
   }
   const fw = {
-    iparams: { get: async () => ({ crm_domain: 'acme.myfreshworks.com' }) },
+    iparams: { get: async () => ({ crmDomain: 'acme.myfreshworks.com' }) },
     data: {
       // window.__entity is set by the test when the app is opened on a record.
       get: async () => {
