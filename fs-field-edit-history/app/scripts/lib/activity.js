@@ -43,6 +43,7 @@
     let paths = webPaths(client, `/${mod.endpoint}/${id}/timeline_feeds`);
     const users = {};
     const rows = [];
+    const seen = new Set(); // the feed repeats entries across (and within) pages
     for (let page = 1; ; page++) {
       if (signal && signal.aborted) throw new Error('Export cancelled');
       const { data, path } = await client.getFirst(paths, { page, include: 'user,targetable' }, {
@@ -51,23 +52,74 @@
       paths = [path];
       (data.users || []).forEach((u) => (users[u.id] = u.display_name || u.email));
       const items = data.timeline_feeds;
-      rows.push(...items.filter((a) => inRange(a.created_at, fromMs, toMs)).map((a) => timelineRow(a, users)));
+      for (const a of items) {
+        if (!inRange(a.created_at, fromMs, toMs)) continue;
+        const key = timelineKey(a);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        rows.push(timelineRow(a, users));
+      }
       onPage(page, rows.length);
       if (!(data.meta && data.meta.has_next) || !items.length) break;
     }
     return rows;
   }
 
+  function timelineKey(a) {
+    const data = typeof a.action_data === 'string' ? a.action_data : JSON.stringify(a.action_data || null);
+    return [a.created_at, a.action_type, a.targetable_type, a.targetable_id, a.user_id, data].join('|');
+  }
+
+  /** CONTACT_STATUS_CHANGED -> "Contact status changed". */
+  function humanize(name) {
+    const s = String(name || '').replace(/[_-]+/g, ' ').trim().toLowerCase();
+    return s ? s[0].toUpperCase() + s.slice(1) : '';
+  }
+
+  /** action_data (object or JSON text) as "Key: value; Key: value". */
+  function details(data) {
+    let d = data;
+    if (typeof d === 'string') {
+      try {
+        d = JSON.parse(d);
+      } catch (_e) {
+        return d;
+      }
+    }
+    const show = (v) => {
+      if ([null, undefined, ''].includes(v)) return '';
+      if (Array.isArray(v)) return v.map(show).filter(Boolean).join(', ');
+      if (typeof v === 'object') {
+        if ('value' in v) return show(v.value);
+        if ('name' in v) return show(v.name);
+        return Object.entries(v)
+          .map(([k, x]) => [humanize(k), show(x)])
+          .filter(([, x]) => x)
+          .map(([k, x]) => `${k}: ${x}`)
+          .join(', ');
+      }
+      return String(v);
+    };
+    if (d && typeof d === 'object' && !Array.isArray(d)) {
+      return Object.entries(d)
+        .map(([k, v]) => [humanize(k), show(v)])
+        .filter(([, v]) => v)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('; ');
+    }
+    return show(d);
+  }
+
   function timelineRow(a, users) {
     return {
       Time: a.created_at,
-      Activity: a.action_type,
+      Activity: humanize(a.action_type),
       Group: a.group && a.group.name,
       'Related to': [a.targetable_type, a.targetable_name].filter(Boolean).join(': '),
       'Related ID': a.targetable_id,
       'Done by': ![null, undefined].includes(a.user_id) ? users[a.user_id] || a.user_id : '',
       Automation: a.automation,
-      Details: a.action_data,
+      Details: details(a.action_data),
     };
   }
   const TIMELINE_COLUMNS = ['Time', 'Activity', 'Group', 'Related to', 'Related ID', 'Done by', 'Automation', 'Details'];
@@ -157,6 +209,8 @@
     fetchWorkflowName,
     fetchRecordName,
     workflowParams,
+    timelineDetails: details,
+    humanize,
     TIMELINE_COLUMNS,
     WORKFLOW_COLUMNS,
   };

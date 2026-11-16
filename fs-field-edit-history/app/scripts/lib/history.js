@@ -102,6 +102,18 @@
     return [source.type, source.name].filter(Boolean).join(': ');
   }
 
+  /** A readable cell for a changed value: `{ value, deleted }` wrappers and lists are unwrapped. */
+  function plainValue(v) {
+    if ([null, undefined].includes(v)) return '';
+    if (Array.isArray(v)) return v.map(plainValue).filter((x) => x !== '').join('; ');
+    if (typeof v === 'object') {
+      if ('value' in v) return plainValue(v.value) + (v.deleted ? ' (deleted)' : '');
+      if ('name' in v) return plainValue(v.name);
+      return JSON.stringify(v);
+    }
+    return v;
+  }
+
   const COLUMNS = ['Record ID', 'Record name', 'Field', 'Field key', 'Old value', 'New value', 'Changed by', 'Source', 'Changed at'];
 
   /** CSV rows for one record's changes. */
@@ -111,8 +123,8 @@
       'Record name': record.name,
       Field: labels[c.field_name] || c.field_name,
       'Field key': c.field_name,
-      'Old value': c.previous_value,
-      'New value': c.new_value,
+      'Old value': plainValue(c.previous_value),
+      'New value': plainValue(c.new_value),
       'Changed by': c.modified_by,
       Source: sourceLabel(c.source),
       'Changed at': c.updated_at,
@@ -136,6 +148,7 @@
     fetchTrackedFields,
     fetchRecordHistory,
     toRows,
+    plainValue,
     recordName,
   };
 })(globalThis);

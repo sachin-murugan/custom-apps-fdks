@@ -33,10 +33,11 @@ function stubClient() {
     if (/^\/crm\/sales\/contacts\/\d+\/field_history$/.test(p)) {
       if (method !== 'POST' || JSON.parse(body).filter[0] !== 'email') throw { status: 400, response: 'bad body' };
       const id = p.split('/')[4];
-      return json({ data: [{ field_name: 'email', previous_value: 'a', new_value: `c${id}@x.test`, modified_by: 'Sam', updated_at: '2026-01-02T03:04:05Z' }], meta: { has_next: false } });
+      return json({ data: [{ field_name: 'email', previous_value: { value: 'a', deleted: false }, new_value: { value: `c${id}@x.test`, deleted: false }, modified_by: 'Sam', updated_at: '2026-01-02T03:04:05Z' }], meta: { has_next: false } });
     }
     if (p === '/crm/sales/contacts/5/timeline_feeds') {
-      return json({ timeline_feeds: [{ created_at: '2026-01-02T03:04:05Z', action_type: 'note', user_id: 1 }], users: [{ id: 1, display_name: 'Sam' }], meta: { has_next: false } });
+      const entry = { created_at: '2026-01-02T03:04:05Z', action_type: 'CONTACT_STATUS_CHANGED', user_id: 1, action_data: '{"old_status":{"name":"New"},"new_status":{"name":"Open"}}' };
+      return json({ timeline_feeds: [entry, { ...entry }], users: [{ id: 1, display_name: 'Sam' }], meta: { has_next: false } });
     }
     if (p === '/crm/sales/api/lists') return json({ lists: page === 1 ? [{ id: 1, name: 'Newsletter' }, { id: 2, name: 'VIP' }] : [] });
     throw { status: 404, response: 'not found' };
@@ -158,7 +159,10 @@ async function csvOf(page, click) {
     ]);
     await t.page.click('#back');
     csv = await csvOf(t.page, () => t.page.click('#export-timeline'));
-    assert.strictEqual(csv.lines.length, 2);
+    assert.deepStrictEqual(csv.lines, [
+      'Time,Activity,Group,Related to,Related ID,Done by,Automation,Details',
+      '2026-01-02T03:04:05Z,Contact status changed,,,,Sam,,Old status: New; New status: Open',
+    ]);
     assert.deepStrictEqual(t.errors, []);
     await t.close();
 
