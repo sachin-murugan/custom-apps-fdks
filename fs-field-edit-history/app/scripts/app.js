@@ -274,7 +274,12 @@
     if (/HTTP 401|HTTP 403/.test(message)) {
       return 'Freshsales refused the request. Check the API key in the app settings, and that this user is allowed to see these records.';
     }
-    if (/field_history_unavailable/.test(message)) return "This Freshsales account doesn't return field edit history. The feature may not be on its plan.";
+    if (/field_history_unavailable/.test(message)) {
+      // Checked 2026-11-17: classic accounts answer `null`; the feature exists only on myfreshworks.com.
+      return conn && /(^|\.)freshsales\.io$/.test(conn.host)
+        ? 'Classic Freshsales accounts (freshsales.io) don\'t keep field edit history. The activity timeline and workflow history exports still work here.'
+        : "This Freshsales account doesn't return field edit history. The feature may not be on its plan.";
+    }
     if (/HTTP 400/.test(message)) return `Freshsales rejected the request: ${message}`;
     if (/All paths failed|HTTP 404|non-JSON/.test(message)) {
       return `Freshsales didn't answer this request for the API key. This screen's data may only be available to a logged-in browser session. Details: ${message}`;

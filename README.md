@@ -74,7 +74,10 @@ custom app to try them.
   (`node tools/smoke-test.js`, needs Playwright).
 - All three were tested live on 2026-11-17 in dev mode (`fdk run` + `?dev=true`) on a
   myfreshworks.com account: list views of 1,164 contacts and 874 deals, marketing list
-  members, workflows, users, field edit history and timelines. Classic freshsales.io
-  accounts are not tested yet.
+  members, workflows, users, field edit history and timelines.
+- Classic freshsales.io (checked 2026-11-17): the API key works on its endpoints (records,
+  forms, timelines, workflows, list views), but classic has no field edit history, and its
+  `?dev=true` mode loads apps from https://localhost, which `fdk run` doesn't serve. So on
+  classic, try the apps by installing the zips as custom apps.
 - Segments, email campaigns and journeys are not offered: Freshworks' marketing API does
   not accept API keys. The Chrome extension still exports them.

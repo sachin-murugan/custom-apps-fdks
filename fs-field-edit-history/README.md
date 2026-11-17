@@ -16,6 +16,9 @@ tracking on in the account.
 Field history CSV, one row per change: Record ID, Record name, Field, Field key, Old value,
 New value, Changed by, Source, Changed at.
 
+Classic Freshsales accounts (`*.freshsales.io`) don't keep field edit history; there the app
+exports activity timelines and workflow history only (checked on 2026-11-17).
+
 Field history for a view needs one request per record, about 45 records a minute. Progress
 is saved in the browser; if a run fails or is cancelled, export again with the same
 settings and it continues (kept for 24 hours).
