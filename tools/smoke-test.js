@@ -40,6 +40,11 @@ function stubClient() {
       return json({ timeline_feeds: [entry, { ...entry }], users: [{ id: 1, display_name: 'Sam' }], meta: { has_next: false } });
     }
     if (p === '/crm/sales/api/lists') return json({ lists: page === 1 ? [{ id: 1, name: 'Newsletter' }, { id: 2, name: 'VIP' }] : [] });
+    if (p === '/crm/sales/custom_reports') {
+      const rules = { chart: true, chart_options: { type: 'bar', coordinates: { y: { field: 'owner.id' } } }, table: true, table_type: 'matrix' };
+      const report = (id) => ({ id, name: `Report ${id}`, category: 'deals', is_public: false, rules, user_id: 1, creator_id: 1, updater_id: 1, schedule: id === 1 ? { id: 9 } : null });
+      return json({ custom_reports: page === 1 ? [report(1), report(2)] : [], users: [{ id: 1, display_name: 'Sam' }], meta: { total: 2, total_pages: 1 } });
+    }
     throw { status: 404, response: 'not found' };
   }
   const fw = {
@@ -146,9 +151,19 @@ async function csvOf(page, click) {
     });
     assert.match(csv.name, /^All marketing lists /);
     assert.strictEqual(csv.lines.length, 3);
+    await t.page.click('#back');
+    await t.page.selectOption('#action', 'reports');
+    csv = await csvOf(t.page, async () => {
+      await t.page.click('#export-action');
+      await t.page.locator('[data-fsx-column-picker] #ok').click({ timeout: 120000 });
+    });
+    assert.match(csv.name, /^All reports \(list\) /);
+    assert.strictEqual(csv.lines.length, 3);
+    assert.ok(!/rules/.test(csv.lines[0]), `report CSV has rules columns: ${csv.lines[0]}`);
+    assert.ok(/owned_by/.test(csv.lines[0]) && /Sam/.test(csv.lines[1]), 'report owner not named');
     assert.deepStrictEqual(t.errors, []);
     await t.close();
-    console.log('ok  fs-data-exporter-all: view via pasted address, marketing lists');
+    console.log('ok  fs-data-exporter-all: view via pasted address, marketing lists, reports list');
 
     // 3. Field edit history, opened on a contact (entity menu): history and timeline.
     t = await open(browser, 'fs-field-edit-history', { entity: { currentEntityId: 5, currentEntityType: 'contact' } });

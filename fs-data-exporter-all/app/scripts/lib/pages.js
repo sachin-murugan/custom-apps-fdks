@@ -38,9 +38,11 @@
     report_table: { label: "This report's table", dom: true },
     reports: {
       label: 'All reports (list)',
-      paths: (c) => c.apiPaths('custom_reports'),
+      // Reports are a web route on both platforms; the /api/ variants only ever 404.
+      paths: (c) => c.apiPaths('custom_reports').filter((p) => !p.includes('/api/')),
       keys: ['custom_reports'],
       params: () => ({ category: 'all', created_by: 'any', include: 'user,updater,schedule' }),
+      transform: reportRows,
     },
     sequence_contacts: {
       label: 'Contacts in this sequence',
@@ -223,6 +225,37 @@
     return out;
   }
 
+  /**
+   * One readable row per custom report. The raw record carries the report's whole chart, filter
+   * and table config under `rules` (about 190 columns for 35 reports live), so keep what a person
+   * reads in the Reports list and name the users from the `users` the request includes.
+   */
+  function reportRows(data, reports) {
+    const users = new Map(((data && data.users) || []).map((u) => [u.id, u.display_name || u.email]));
+    const who = (id) => ([null, undefined].includes(id) ? '' : users.get(id) || id);
+    return (reports || []).map((r) => {
+      const rules = r.rules || {};
+      const shows = [
+        rules.chart && `chart (${(rules.chart_options && rules.chart_options.type) || 'unknown'})`,
+        rules.table && `table (${rules.table_type || 'unknown'})`,
+      ].filter(Boolean);
+      return {
+        id: r.id,
+        name: r.name,
+        description: r.description || '',
+        category: r.category,
+        visibility: r.is_public ? 'Public' : 'Private',
+        shows: shows.join(', '),
+        owned_by: who(r.user_id),
+        created_by: who(r.creator_id),
+        updated_by: who(r.updater_id),
+        created_at: r.created_at,
+        updated_at: r.updated_at,
+        scheduled: r.schedule ? 'Yes' : 'No',
+      };
+    });
+  }
+
   /** Email conversations with their from / to / cc / bcc addresses and open / click flags joined in. */
   function withRecipients(data, emails) {
     const byId = new Map(((data && data.email_conversation_recipients) || []).map((r) => [r.id, r]));
@@ -351,5 +384,5 @@
     return grid;
   }
 
-  FSX.pages = { ACTIONS, PAGES, detectPage, fetchAll, fetchAction, pickArray, tableToGrid };
+  FSX.pages = { ACTIONS, PAGES, detectPage, fetchAll, fetchAction, pickArray, tableToGrid, reportRows };
 })(globalThis);
