@@ -61,7 +61,7 @@
     let url;
     try {
       url = new URL(href);
-    } catch (_e) {
+    } catch {
       return null;
     }
     const path = url.pathname + url.hash.replace(/^#/, '');

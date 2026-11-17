@@ -54,11 +54,15 @@ Ready-to-upload zips are in [`zips/`](zips), built with `fdk pack` from this com
 
 You need the Freshworks CLI (`fdk`), see
 <https://developers.freshworks.com/docs/app-sdk/v3.0/common/app-development-process/>.
-The manifests are set to the versions the apps were validated with: FDK 9.8.2 on Node.js
-18.20.8. With FDK 10 (Node.js 24.11+), let `fdk validate` update `engines` when it asks.
+The Freshworks developer portal only accepts platform 3.0 apps built for Node.js 24, so the
+manifests are set to FDK 10.1.10 on Node.js 24.22.2. Install FDK 10 from
+`https://cdn.freshdev.io/fdk/v10.1.10.tgz`; the `latest.tgz` link still serves FDK 9. FDK 10
+also requires unit tests: each app has `vitest.config.js`, `tests/` and a `package.json` with
+the test tooling (`npm install`, then `npx vitest run`).
 
 ```bash
 cd fs-list-view-exporter      # or another app folder
+npm install                   # vitest, for the unit tests fdk validate requires
 fdk validate
 fdk pack -s                   # skip the coverage gate; writes dist/<folder>.zip
 ```

@@ -16,7 +16,7 @@
     try {
       const url = new URL(href);
       return { host: url.host, path: url.pathname + url.hash.replace(/^#/, '') };
-    } catch (_e) {
+    } catch {
       return null;
     }
   }
@@ -82,7 +82,7 @@
     if (typeof d === 'string') {
       try {
         d = JSON.parse(d);
-      } catch (_e) {
+      } catch {
         return d;
       }
     }
@@ -186,7 +186,7 @@
     try {
       const { data } = await client.getFirst(webPaths(client, `/workflow_automations/${workflowId}`));
       return (data && data.workflow_automation && data.workflow_automation.name) || null;
-    } catch (_e) {
+    } catch {
       return null;
     }
   }
@@ -196,7 +196,7 @@
     try {
       const { data } = await client.getFirst(client.apiPaths(`${mod.endpoint}/${id}`));
       return FSX.history.recordName(data && (data[mod.entity] || data[mod.endpoint])) || null;
-    } catch (_e) {
+    } catch {
       return null;
     }
   }

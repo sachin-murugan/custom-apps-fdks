@@ -36,7 +36,7 @@
   const marketer = (key) => {
     try {
       return (ACTIONS[key].paths ? ACTIONS[key].paths(NO_CLIENT, '0') : []).some((p) => String(p).startsWith('/crm/marketer'));
-    } catch (_e) {
+    } catch {
       return false;
     }
   };
@@ -56,13 +56,13 @@
     let prefs = {};
     try {
       ({ columnPrefs: prefs = {} } = await store.get('columnPrefs'));
-    } catch (_e) {}
+    } catch {}
     const chosen = await pickColumns({ columns, initial: initialSelection(columns, prefs[key]), recordCount, viewName });
     if (!chosen) return null;
     try {
       prefs[key] = rememberSelection(columns, chosen, prefs[key]);
       await store.set({ columnPrefs: prefs });
-    } catch (_e) {}
+    } catch {}
     return applySelection(columns, chosen);
   }
 
@@ -79,7 +79,7 @@
         return null;
       }
       return meta || null;
-    } catch (_e) {
+    } catch {
       return null;
     }
   }
@@ -96,7 +96,7 @@
         return null;
       }
       return { nextPage: Math.max(...meta.pages) + 1, records: chunkKeys.flatMap((k) => chunks[k]) };
-    } catch (_e) {
+    } catch {
       return null;
     }
   }
@@ -113,7 +113,7 @@
         meta.at = Date.now();
         await store.set({ [`${key}#${page}`]: records });
         await store.set({ [key]: meta });
-      } catch (_e) {
+      } catch {
         // Usually the storage quota on a very large export. Carry on without resume.
         working = false;
         await clearCheckpoint(key);
@@ -125,7 +125,7 @@
     try {
       const { [key]: meta } = await store.get(key);
       await store.remove([key, ...((meta && meta.pages) || []).map((p) => `${key}#${p}`)]);
-    } catch (_e) {}
+    } catch {}
   }
 
   async function savedCount(key) {

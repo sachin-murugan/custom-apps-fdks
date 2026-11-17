@@ -44,7 +44,7 @@
         return null;
       }
       return meta;
-    } catch (_e) {
+    } catch {
       return null;
     }
   }
@@ -61,7 +61,7 @@
       const { [key]: meta } = await store.get(key);
       const n = (meta && meta.chunks) || 0;
       await store.remove([key, ...Array.from({ length: n }, (_, i) => `${key}#${i}`)]);
-    } catch (_e) {}
+    } catch {}
   }
 
   /** Saver that gives up (and drops the checkpoint) the first time the browser refuses a write. */
@@ -73,7 +73,7 @@
       try {
         if (rowsChunk) await store.set({ [`${key}#${meta.chunks - 1}`]: rowsChunk });
         await store.set({ [key]: meta });
-      } catch (_e) {
+      } catch {
         working = false; // usually the storage quota; the export itself carries on in memory
         await clearCkpt(key);
       }
@@ -191,7 +191,7 @@
       if (meta) {
         try {
           allRows = await loadRows(key, meta);
-        } catch (_e) {
+        } catch {
           await clearCkpt(key);
           meta = null;
         }
@@ -340,7 +340,7 @@
       const info = data && data.currentEntityInfo;
       const mod = info && ENTITY_MODULES[info.currentEntityType];
       return mod && info.currentEntityId ? { kind: 'record', host: conn.host, ...mod, recordId: String(info.currentEntityId) } : null;
-    } catch (_e) {
+    } catch {
       return null;
     }
   }

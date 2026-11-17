@@ -120,7 +120,7 @@
     let url;
     try {
       url = new URL(href);
-    } catch (_e) {
+    } catch {
       return null;
     }
     const view = parseListViewUrl(href);

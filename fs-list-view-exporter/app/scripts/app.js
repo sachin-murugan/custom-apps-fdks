@@ -23,13 +23,13 @@
     let prefs = {};
     try {
       ({ columnPrefs: prefs = {} } = await store.get('columnPrefs'));
-    } catch (_e) {}
+    } catch {}
     const chosen = await pickColumns({ columns, initial: initialSelection(columns, prefs[key]), recordCount, viewName: view.viewName });
     if (!chosen) return null;
     try {
       prefs[key] = rememberSelection(columns, chosen, prefs[key]);
       await store.set({ columnPrefs: prefs });
-    } catch (_e) {}
+    } catch {}
     return applySelection(columns, chosen);
   }
 

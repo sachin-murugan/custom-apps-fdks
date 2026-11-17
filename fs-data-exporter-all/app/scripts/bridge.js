@@ -186,7 +186,7 @@
     try {
       const { [cacheKey]: saved } = await store.get(cacheKey);
       if (saved && Date.now() - saved.at < CACHE_TTL_MS) cache = new Map(saved.entries);
-    } catch (_e) {
+    } catch {
       cache = new Map();
     }
     const startedAt = Date.now();

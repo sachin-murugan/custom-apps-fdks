@@ -99,7 +99,7 @@
         if (!text.trim()) return {};
         try {
           return JSON.parse(text);
-        } catch (_e) {
+        } catch {
           // An HTML page usually means we hit a web route or a login redirect, not the API.
           throw new HttpError(resp.status === 200 ? 404 : resp.status, path, 'non-JSON response');
         }

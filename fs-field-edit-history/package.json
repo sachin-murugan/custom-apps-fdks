@@ -1,0 +1,9 @@
+{
+  "name": "fs-field-edit-history",
+  "private": true,
+  "description": "Unit test tooling for fdk validate and fdk run (manifest scripts.fdk-unit-test).",
+  "devDependencies": {
+    "@vitest/coverage-v8": "~2.1.8",
+    "vitest": "~2.1.8"
+  }
+}

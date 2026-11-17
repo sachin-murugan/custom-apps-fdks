@@ -89,7 +89,7 @@
         const views = await this.fetchViews(mod);
         const match = views.find((v) => v.id === String(viewId));
         return match ? match.name : null;
-      } catch (_e) {
+      } catch {
         return null;
       }
     }

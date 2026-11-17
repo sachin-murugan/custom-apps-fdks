@@ -146,7 +146,7 @@
             const items = itemsFromResponse(data, resource);
             items.forEach((item) => this.register(resource, item));
             if (items.length) log(`Loaded ${items.length} ${resource}`);
-          } catch (_e) {
+          } catch {
             // Selector not available on this account/plan; names fall back to include data.
           }
         })
@@ -159,7 +159,7 @@
           }
           log(`Loaded ${Object.keys(this.entities.users || {}).length} users/owners`);
           break;
-        } catch (_e) {
+        } catch {
           continue;
         }
       }
@@ -175,7 +175,7 @@
       try {
         const { data } = await client.getFirst(paths);
         for (const fld of (data && data.fields) || []) this.registerFieldLookup(fld);
-      } catch (_e) {
+      } catch {
         // Field metadata is optional; custom lookup names just won't resolve.
       }
     }
